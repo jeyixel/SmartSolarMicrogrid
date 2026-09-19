@@ -1,0 +1,32 @@
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio cache and user files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+## Publish profiles and outputs
+[Pp]ublish/
+*[Pp]ublish[Pp]rofiles/
+
+## Application configuration and local secrets
+# appsettings.json is usually committed as a template.
+# Developers should use User Secrets or uncommitted appsettings.Development.json for local secrets.
+appsettings.Development.json
+appsettings.*.json
