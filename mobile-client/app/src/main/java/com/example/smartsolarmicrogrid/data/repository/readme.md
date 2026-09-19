@@ -1,0 +1,1 @@
+Contains repository classes that manage the data flow, acting as the bridge between your local SQLite database and the remote Web API

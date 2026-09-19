@@ -1,0 +1,1 @@
+Contains SQLite database helper classes and data access objects for local persistence.
