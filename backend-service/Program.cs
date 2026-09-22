@@ -63,10 +63,15 @@ builder.Services.Configure<MongoDbSettings>(
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
+// Bind Bootstrap Admin configuration settings
+builder.Services.Configure<BootstrapAdminSettings>(
+    builder.Configuration.GetSection("BootstrapAdmin"));
+
 // Register application services
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<DevelopmentAdminSeeder>();
 
 // Register MongoDB client as a singleton
 builder.Services.AddSingleton<IMongoClient>(sp =>
@@ -173,6 +178,13 @@ if (app.Environment.IsDevelopment())
         // Configure Swagger UI endpoint and title
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Solar Microgrid API v1");
     });
+
+    // Seed initial development administrator account
+    using (var scope = app.Services.CreateScope())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>();
+        await seeder.SeedAsync();
+    }
 }
 
 app.UseHttpsRedirection();
@@ -185,4 +197,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

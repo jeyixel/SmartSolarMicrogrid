@@ -52,7 +52,7 @@ public class AuthenticationService : IAuthenticationService
         }
 
         var normalizedIdentifier = request.Identifier.Trim();
-        var normalizedEmail = normalizedIdentifier.ToUpperInvariant();
+        var normalizedEmail = normalizedIdentifier.ToLowerInvariant();
 
         // Exact match lookup on indexed fields (NormalizedEmail, Email, NIC) avoiding unindexed regex scans
         var filter = Builders<User>.Filter.Or(
