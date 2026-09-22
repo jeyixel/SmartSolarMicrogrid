@@ -118,11 +118,50 @@ public class AuthenticationService : IAuthenticationService
             {
                 Id = user.Id,
                 FullName = user.FullName,
-                Email = user.Email,
                 NIC = user.NIC,
                 Role = user.Role.ToString(),
                 Status = user.Status.ToString()
             }
+        };
+    }
+
+    public async Task<AuthenticatedUserDto> GetCurrentProfileAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // Fetch current live user record from database and verify that account is currently Active.
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            throw new UnauthorizedAccessException("User identifier claim is required.");
+        }
+
+        var user = await _usersCollection.Find(u => u.Id == userId).FirstOrDefaultAsync(cancellationToken);
+
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("User account does not exist.");
+        }
+
+        if (user.Status != AccountStatus.Active)
+        {
+            if (user.Status == AccountStatus.Pending)
+            {
+                throw new AccountStatusException(AccountStatus.Pending, "Account activation is pending administrator approval.");
+            }
+
+            if (user.Status == AccountStatus.Deactivated)
+            {
+                throw new AccountStatusException(AccountStatus.Deactivated, "Account has been deactivated. Please contact support.");
+            }
+
+            throw new AccountStatusException(user.Status, "Account is not active.");
+        }
+
+        return new AuthenticatedUserDto
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            NIC = user.NIC,
+            Role = user.Role.ToString(),
+            Status = user.Status.ToString()
         };
     }
 }

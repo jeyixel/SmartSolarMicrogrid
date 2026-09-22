@@ -6,6 +6,7 @@
  * Last Modified: 2026-09-22
  */
 
+using System.Security.Claims;
 using backend_service.DTOs;
 using backend_service.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -36,5 +37,24 @@ public class AuthController : ControllerBase
         // Delegate authentication to the authentication service and return JWT response.
         var response = await _authenticationService.AuthenticateAsync(request, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthenticatedUserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<AuthenticatedUserDto>> GetCurrentUser(CancellationToken cancellationToken)
+    {
+        // Resolve user identity claim and query live database record to guarantee active status.
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(new { message = "User identifier claim is missing from token." });
+        }
+
+        var profile = await _authenticationService.GetCurrentProfileAsync(userId, cancellationToken);
+        return Ok(profile);
     }
 }

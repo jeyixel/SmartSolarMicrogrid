@@ -6,10 +6,14 @@
  * Last Modified: 2026-09-22
  */
 
+using System.Text;
 using backend_service.Middleware;
+using backend_service.Models;
 using backend_service.Services;
 using backend_service.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MongoDB.Driver;
 
@@ -91,6 +95,56 @@ builder.Services.AddSingleton<IMongoDatabase>(sp =>
     return client.GetDatabase(settings.DatabaseName);
 });
 
+// Configure JWT Bearer Authentication
+var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"] ?? string.Empty;
+var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? string.Empty;
+var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? string.Empty;
+
+builder.Services.AddAuthentication(options =>
+{
+    // Configure default authentication scheme to JWT Bearer
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    // Configure token validation parameters for incoming JWTs
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = !string.IsNullOrWhiteSpace(jwtSecretKey) ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)) : null,
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+// Configure Role-Based Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    // Define named authorization policies matching system role matrix
+    options.AddPolicy("RequireBackofficeRole", policy =>
+    {
+        // Require Backoffice role for administrative and user management operations
+        policy.RequireRole(UserRole.Backoffice.ToString());
+    });
+
+    options.AddPolicy("RequireGridOperatorRole", policy =>
+    {
+        // Require GridOperator role for operational and grid management operations
+        policy.RequireRole(UserRole.GridOperator.ToString());
+    });
+
+    options.AddPolicy("RequireProsumerRole", policy =>
+    {
+        // Require Prosumer role for self-service account and energy operations
+        policy.RequireRole(UserRole.Prosumer.ToString());
+    });
+});
+
 // Configure CORS policy for frontend client
 const string CorsPolicyName = "FrontendDevelopment";
 builder.Services.AddCors(options =>
@@ -124,6 +178,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors(CorsPolicyName);
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
