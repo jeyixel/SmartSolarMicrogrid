@@ -7,6 +7,7 @@
  */
 
 using backend_service.Middleware;
+using backend_service.Services;
 using backend_service.Settings;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
@@ -53,6 +54,15 @@ builder.Services.AddSwaggerGen(c =>
 // Bind MongoDB configuration settings
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
+
+// Bind JWT configuration settings
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
+// Register application services
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
 // Register MongoDB client as a singleton
 builder.Services.AddSingleton<IMongoClient>(sp =>
