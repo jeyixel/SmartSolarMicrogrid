@@ -6,6 +6,7 @@
  * Last Modified: 2026-09-22
  */
 
+using backend_service.Middleware;
 using backend_service.Settings;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
@@ -95,6 +96,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Global exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
