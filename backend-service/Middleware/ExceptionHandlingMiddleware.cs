@@ -7,6 +7,7 @@
  */
 
 using System.Text.Json;
+using backend_service.Exceptions;
 
 namespace backend_service.Middleware;
 
@@ -31,20 +32,50 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred during request execution.");
-            await HandleExceptionAsync(context);
+            await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context)
+    private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
-        // Generate a standardized, safe error response without leaking sensitive details.
+        // Generate a standardized, safe error response without leaking internal secrets or stack traces.
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        int statusCode;
+        string message;
+
+        switch (ex)
+        {
+            case UnauthorizedAccessException:
+                statusCode = StatusCodes.Status401Unauthorized;
+                message = ex.Message;
+                _logger.LogWarning(ex, "Unauthorized request: {Message}", ex.Message);
+                break;
+
+            case AccountStatusException:
+                statusCode = StatusCodes.Status403Forbidden;
+                message = ex.Message;
+                _logger.LogWarning(ex, "Forbidden access due to account status: {Message}", ex.Message);
+                break;
+
+            case ArgumentException or BadHttpRequestException:
+                statusCode = StatusCodes.Status400BadRequest;
+                message = ex.Message;
+                _logger.LogWarning(ex, "Bad request validation error: {Message}", ex.Message);
+                break;
+
+            default:
+                statusCode = StatusCodes.Status500InternalServerError;
+                message = "An unexpected error occurred.";
+                _logger.LogError(ex, "An unhandled exception occurred during request execution.");
+                break;
+        }
+
+        context.Response.StatusCode = statusCode;
 
         var response = new
         {
-            message = "An unexpected error occurred."
+            message
         };
 
         var jsonResponse = JsonSerializer.Serialize(response);
