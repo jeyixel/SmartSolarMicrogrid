@@ -13,11 +13,16 @@ var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("Mon
 var mongoDatabase = mongoClient.GetDatabase("SmartSolarMicrogrid");
 builder.Services.AddSingleton(mongoDatabase);
 
-// Setup DI
+// ─── Reservation Domain DI (Member 3) ─────────────────────────────────────────
+// Repositories
 builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
 builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
+builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
+
+// Services (FAT pattern — all business logic lives here)
 builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
 builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
+// ──────────────────────────────────────────────────────────────────────────────
 
 builder.Services.AddCors(options =>
 {

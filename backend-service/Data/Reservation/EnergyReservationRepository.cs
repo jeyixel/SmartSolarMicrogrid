@@ -18,8 +18,8 @@ public class EnergyReservationRepository : IEnergyReservationRepository
     public async Task<EnergyReservation?> GetByIdAsync(string id) =>
         await _reservations.Find(x => x.Id == id).FirstOrDefaultAsync();
 
-    public async Task<List<EnergyReservation>> GetByProsumerIdAsync(string prosumerId) =>
-        await _reservations.Find(x => x.ProsumerId == prosumerId).ToListAsync();
+    public async Task<List<EnergyReservation>> GetByProsumerNicAsync(string prosumerNic) =>
+        await _reservations.Find(x => x.ProsumerNIC == prosumerNic).ToListAsync();
 
     public async Task CreateAsync(EnergyReservation reservation) =>
         await _reservations.InsertOneAsync(reservation);
@@ -30,4 +30,3 @@ public class EnergyReservationRepository : IEnergyReservationRepository
     public async Task DeleteAsync(string id) =>
         await _reservations.DeleteOneAsync(x => x.Id == id);
 }
-

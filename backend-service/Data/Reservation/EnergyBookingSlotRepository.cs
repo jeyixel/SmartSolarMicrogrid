@@ -18,6 +18,9 @@ public class EnergyBookingSlotRepository : IEnergyBookingSlotRepository
     public async Task<EnergyBookingSlot?> GetByIdAsync(string id) =>
         await _slots.Find(x => x.Id == id).FirstOrDefaultAsync();
 
+    public async Task<List<EnergyBookingSlot>> GetByStationIdAsync(string stationId) =>
+        await _slots.Find(x => x.StationId == stationId).ToListAsync();
+
     public async Task CreateAsync(EnergyBookingSlot slot) =>
         await _slots.InsertOneAsync(slot);
 
@@ -27,4 +30,3 @@ public class EnergyBookingSlotRepository : IEnergyBookingSlotRepository
     public async Task DeleteAsync(string id) =>
         await _slots.DeleteOneAsync(x => x.Id == id);
 }
-

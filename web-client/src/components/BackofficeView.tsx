@@ -1,74 +1,107 @@
 import React, { useEffect, useState } from 'react';
-import { EnergyReservation, fetchReservations, cancelReservation, EnergyBookingSlot, fetchSlots } from '../lib/api';
+import {
+  EnergyReservation,
+  EnergyBookingSlot,
+  fetchReservations,
+  fetchSlots,
+  cancelReservation,
+} from '../lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
+/**
+ * BackofficeView — read-only overview of all reservations with admin override cancel.
+ * Uses updated model fields: prosumerNIC (was prosumerId), stationId (was gridNodeId).
+ */
 export const BackofficeView: React.FC = () => {
+  const { userId } = useAuth();
   const [reservations, setReservations] = useState<EnergyReservation[]>([]);
-  const [slots, setSlots] = useState<Record<string, EnergyBookingSlot>>({});
-  const [loading, setLoading] = useState(true);
+  const [slots, setSlots]               = useState<Record<string, EnergyBookingSlot>>({});
+  const [loading, setLoading]           = useState(true);
 
   const loadData = async () => {
     try {
+      setLoading(true);
       const [resData, slotsData] = await Promise.all([
         fetchReservations(),
-        fetchSlots()
+        fetchSlots(),
       ]);
-      
       const slotsMap: Record<string, EnergyBookingSlot> = {};
-      slotsData.forEach(s => slotsMap[s.id] = s);
-      
+      slotsData.forEach(s => { slotsMap[s.id] = s; });
       setSlots(slotsMap);
       setReservations(resData);
     } catch (error) {
-      console.error(error);
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const handleOverrideCancel = async (id: string) => {
-    if (!window.confirm("Are you sure you want to cancel this reservation?")) return;
+    if (!window.confirm('Override and cancel this reservation?')) return;
     try {
-      await cancelReservation(id);
+      await cancelReservation(id, userId);
       loadData();
     } catch (error: any) {
       alert(`Failed to cancel: ${error.message}`);
     }
   };
 
-  if (loading) return <div>Loading reservations...</div>;
+  if (loading) return <div className="text-body-sm text-muted-foreground p-4">Loading reservations…</div>;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Backoffice System Management</h2>
+      <h2 className="text-headline-lg text-slate-900">System Overview</h2>
       <div className="grid grid-cols-1 gap-4">
+        {reservations.length === 0 && (
+          <p className="text-body-sm text-muted-foreground">No reservations in the system.</p>
+        )}
         {reservations.map(res => {
           const slot = slots[res.slotId];
           return (
-            <Card key={res.id}>
+            <Card key={res.id} className="rounded-lg border border-slate-200 bg-white shadow-none">
               <CardHeader>
-                <CardTitle>Reservation: {res.id}</CardTitle>
+                <CardTitle className="text-headline-sm font-mono text-xs">{res.id}</CardTitle>
               </CardHeader>
-              <CardContent className="flex justify-between items-center">
-                <div>
-                  <p><strong>Prosumer NIC:</strong> {res.prosumerId}</p>
-                  <p><strong>Status:</strong> {res.status}</p>
-                  <p><strong>Created:</strong> {new Date(res.createdAt).toLocaleString()}</p>
+              <CardContent className="flex justify-between items-start flex-wrap gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-body-sm">
+                    <span className="text-muted-foreground">Prosumer NIC:</span>{' '}
+                    <span className="font-mono text-xs font-medium">{res.prosumerNIC}</span>
+                  </p>
+                  <p className="text-body-sm">
+                    <span className="text-muted-foreground">Status:</span>{' '}
+                    <span className={`font-medium ${res.status === 'Pending' ? 'text-amber-700' : res.status === 'Completed' ? 'text-emerald-700' : 'text-red-700'}`}>
+                      {res.status}
+                    </span>
+                  </p>
+                  <p className="text-body-sm text-muted-foreground">
+                    Created: {new Date(res.createdAt).toLocaleString()}
+                  </p>
                   {slot && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p><strong>Slot Time:</strong> {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}</p>
-                      <p><strong>Node:</strong> {slot.gridNodeId}</p>
+                    <div className="mt-2 pt-2 border-t border-slate-100 text-body-sm space-y-0.5">
+                      <p>
+                        <span className="text-muted-foreground">Station:</span>{' '}
+                        <span className="font-mono text-xs">{slot.stationId}</span>
+                      </p>
+                      <p className="text-muted-foreground font-mono text-xs">
+                        {new Date(slot.startTime).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+                        {' → '}
+                        {new Date(slot.endTime).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
                     </div>
                   )}
                 </div>
-                {res.status === 'Active' && (
-                  <Button variant="destructive" onClick={() => handleOverrideCancel(res.id)}>
-                    Override & Cancel
+                {res.status === 'Pending' && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleOverrideCancel(res.id)}
+                  >
+                    Override &amp; Cancel
                   </Button>
                 )}
               </CardContent>
@@ -79,4 +112,3 @@ export const BackofficeView: React.FC = () => {
     </div>
   );
 };
-
