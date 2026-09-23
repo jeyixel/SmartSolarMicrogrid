@@ -153,8 +153,12 @@ public class SolarStationController : ControllerBase
         [FromBody] OperationalScheduleBlock block,
         [FromHeader(Name = "X-User-Id")] string? userId = null)
     {
-        if (block.EndTime <= block.StartTime)
+        if (DateTime.TryParse(block.StartTime, out var start) &&
+            DateTime.TryParse(block.EndTime, out var end) &&
+            end <= start)
+        {
             return BadRequest(new { error = "Schedule block EndTime must be after StartTime." });
+        }
 
         var station = await _stationRepo.GetByStationCodeAsync(stationCode);
 

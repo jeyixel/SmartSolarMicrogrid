@@ -10,6 +10,7 @@ namespace backend_service.Models;
 ///   - 7-Day Scheduling Rule: slot must start within the next 7 days.
 ///   - 12-Hour Rule: modifications/cancellations blocked within 12 hours of slot start.
 /// </summary>
+[BsonIgnoreExtraElements]
 public class EnergyReservation
 {
     [BsonId]
@@ -21,6 +22,23 @@ public class EnergyReservation
     /// Primary identifier for the solar panel owner making the reservation.
     /// </summary>
     public string ProsumerNIC { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Backward-compatibility mapping for legacy documents that used "ProsumerId".
+    /// </summary>
+    [BsonElement("ProsumerId")]
+    [BsonIgnoreIfNull]
+    public string? LegacyProsumerId
+    {
+        get => null;
+        set
+        {
+            if (!string.IsNullOrEmpty(value) && string.IsNullOrEmpty(ProsumerNIC))
+            {
+                ProsumerNIC = value;
+            }
+        }
+    }
 
     /// <summary>
     /// Foreign key referencing EnergyBookingSlot.Id.

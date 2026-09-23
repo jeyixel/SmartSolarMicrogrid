@@ -1,8 +1,16 @@
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using backend_service.Data;
 using backend_service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure MongoDB conventions: ignore extra elements across all documents globally
+var conventionPack = new ConventionPack
+{
+    new IgnoreExtraElementsConvention(true)
+};
+ConventionRegistry.Register("GlobalConventions", conventionPack, type => true);
 
 // Add services to the container.
 builder.Services.AddControllers();
