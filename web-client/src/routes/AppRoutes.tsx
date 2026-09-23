@@ -1,7 +1,14 @@
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, Route, Routes, useNavigate } from 'react-router';
 import LoginPage from '../pages/auth/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import BackofficeLayout from '../components/layout/BackofficeLayout';
+import BackofficeDashboardPage from '../pages/backoffice/BackofficeDashboardPage';
+import UserListPage from '../pages/backoffice/UserListPage';
+import CreateStaffUserPage from '../pages/backoffice/CreateStaffUserPage';
+import PendingRegistrationsPage from '../pages/backoffice/PendingRegistrationsPage';
+import DeactivationRequestsPage from '../pages/backoffice/DeactivationRequestsPage';
+import UserDetailsPage from '../pages/backoffice/UserDetailsPage';
 
 function Placeholder({ title }: { title: string }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -41,12 +48,6 @@ function Placeholder({ title }: { title: string }) {
   );
 }
 
-function UserDetailsPlaceholder() {
-  const { nic } = useParams<{ nic: string }>();
-
-  return <Placeholder title={`User details: ${nic ?? 'Unknown NIC'}`} />;
-}
-
 export default function AppRoutes() {
   return (
     <Routes>
@@ -57,33 +58,19 @@ export default function AppRoutes() {
         element={<Placeholder title="Unauthorized" />}
       />
 
+      {/* Backoffice Protected Routes */}
       <Route element={<ProtectedRoute requiredRole={0} />}>
-        <Route
-          path="/backoffice/dashboard"
-          element={<Placeholder title="Backoffice dashboard" />}
-        />
-        <Route
-          path="/backoffice/users"
-          element={<Placeholder title="Users" />}
-        />
-        <Route
-          path="/backoffice/users/create"
-          element={<Placeholder title="Create user" />}
-        />
-        <Route
-          path="/backoffice/users/pending"
-          element={<Placeholder title="Pending users" />}
-        />
-        <Route
-          path="/backoffice/users/deactivation-requests"
-          element={<Placeholder title="Deactivation requests" />}
-        />
-        <Route
-          path="/backoffice/users/:nic"
-          element={<UserDetailsPlaceholder />}
-        />
+        <Route element={<BackofficeLayout />}>
+          <Route path="/backoffice/dashboard" element={<BackofficeDashboardPage />} />
+          <Route path="/backoffice/users" element={<UserListPage />} />
+          <Route path="/backoffice/users/create" element={<CreateStaffUserPage />} />
+          <Route path="/backoffice/users/pending" element={<PendingRegistrationsPage />} />
+          <Route path="/backoffice/users/deactivation-requests" element={<DeactivationRequestsPage />} />
+          <Route path="/backoffice/users/:nic" element={<UserDetailsPage />} />
+        </Route>
       </Route>
 
+      {/* Grid Operator Protected Routes */}
       <Route element={<ProtectedRoute requiredRole={1} />}>
         <Route
           path="/operator/dashboard"
@@ -91,6 +78,7 @@ export default function AppRoutes() {
         />
       </Route>
 
+      {/* Fallback 404 Route */}
       <Route path="*" element={<Placeholder title="Page not found" />} />
     </Routes>
   );

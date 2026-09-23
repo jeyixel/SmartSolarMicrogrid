@@ -66,11 +66,34 @@ public class UsersController : ControllerBase
         return Ok(response);
     }
 
+    [HttpGet("deactivation-requests")]
+    public async Task<ActionResult<List<UserResponseDto>>> GetDeactivationRequests(
+        CancellationToken cancellationToken)
+    {
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(user => user.Role, UserRole.Prosumer),
+            Builders<User>.Filter.Eq(user => user.Status, AccountStatus.Active),
+            Builders<User>.Filter.Ne(user => user.DeactivationRequestedAt, null)
+        );
+
+        var users = await _usersCollection
+            .Find(filter)
+            .SortBy(user => user.DeactivationRequestedAt)
+            .ToListAsync(cancellationToken);
+
+        var response = users
+            .Select(UserResponseDto.FromUser)
+            .ToList();
+
+        return Ok(response);
+    }
+
     [HttpGet]
     public async Task<ActionResult<PagedUsersResponseDto>> GetAllUsers(
         [FromQuery] string? search,
         [FromQuery] UserRole? role,
         [FromQuery] AccountStatus? status,
+        [FromQuery] bool? deactivationRequestsOnly,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
@@ -105,6 +128,11 @@ public class UsersController : ControllerBase
         if (status.HasValue)
         {
             filter &= builder.Eq(user => user.Status, status.Value);
+        }
+
+        if (deactivationRequestsOnly.HasValue && deactivationRequestsOnly.Value)
+        {
+            filter &= builder.Ne(user => user.DeactivationRequestedAt, null);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
