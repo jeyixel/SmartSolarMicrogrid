@@ -27,4 +27,12 @@ public interface IAuthenticationService
     /// <param name="cancellationToken">Cancellation token for asynchronous database operations.</param>
     /// <returns>Current authenticated user profile summary.</returns>
     Task<AuthenticatedUserDto> GetCurrentProfileAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Registers a new prosumer account with pending approval status.
+    /// </summary>
+    /// <param name="request">Registration request containing prosumer details and password.</param>
+    /// <param name="cancellationToken">Cancellation token for asynchronous database operations.</param>
+    /// <returns>Registration confirmation with assigned user ID and pending status.</returns>
+    Task<RegisterProsumerResponse> RegisterProsumerAsync(RegisterProsumerRequest request, CancellationToken cancellationToken = default);
 }

@@ -164,4 +164,97 @@ public class AuthenticationService : IAuthenticationService
             Status = user.Status.ToString()
         };
     }
+
+    public async Task<RegisterProsumerResponse> RegisterProsumerAsync(RegisterProsumerRequest request, CancellationToken cancellationToken = default)
+    {
+        // 1. Reject a null request
+        if (request == null)
+        {
+            throw new ArgumentNullException(nameof(request), "Registration request cannot be null.");
+        }
+
+        // 2. Trim all text fields
+        var fullName = request.FullName?.Trim() ?? string.Empty;
+        var rawNic = request.Nic?.Trim() ?? string.Empty;
+        var rawEmail = request.Email?.Trim() ?? string.Empty;
+        var phoneNumber = request.PhoneNumber?.Trim() ?? string.Empty;
+        var address = request.Address?.Trim() ?? string.Empty;
+        var password = request.Password ?? string.Empty;
+
+        // 3. Normalize NIC using uppercase (e.g. 991234567v -> 991234567V)
+        var normalizedNic = rawNic.ToUpperInvariant();
+
+        // 4. Normalize email using lowercase
+        var normalizedEmail = rawEmail.ToLowerInvariant();
+
+        // 5. Call ValidatePasswordStrength
+        if (!_passwordService.ValidatePasswordStrength(password, out var passwordError))
+        {
+            throw new ArgumentException(passwordError ?? "Password does not satisfy complexity requirements.");
+        }
+
+        // 6. Check MongoDB for existing Id == normalizedNic or NormalizedEmail == normalizedEmail
+        var duplicateFilter = Builders<User>.Filter.Or(
+            Builders<User>.Filter.Eq(u => u.Id, normalizedNic),
+            Builders<User>.Filter.Eq(u => u.NormalizedEmail, normalizedEmail)
+        );
+
+        var existingUser = await _usersCollection.Find(duplicateFilter).FirstOrDefaultAsync(cancellationToken);
+        if (existingUser != null)
+        {
+            if (string.Equals(existingUser.Id, normalizedNic, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(existingUser.NIC, normalizedNic, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ConflictException("An account with this NIC already exists.");
+            }
+
+            throw new ConflictException("An account with this email already exists.");
+        }
+
+        // 7. Hash the password using _passwordService.HashPassword
+        var passwordHash = _passwordService.HashPassword(password);
+
+        // 8. Create the user entity
+        var now = DateTime.UtcNow;
+        var newUser = new User
+        {
+            Id = normalizedNic,
+            FullName = fullName,
+            Email = rawEmail,
+            NormalizedEmail = normalizedEmail,
+            PhoneNumber = phoneNumber,
+            Address = address,
+            NIC = normalizedNic,
+            PasswordHash = passwordHash,
+            Role = UserRole.Prosumer,
+            Status = AccountStatus.Pending,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        // 9. Insert user with MongoDB duplicate-key error 11000 handling
+        try
+        {
+            await _usersCollection.InsertOneAsync(newUser, cancellationToken: cancellationToken);
+            _logger.LogInformation("Prosumer registration successful for User ID (NIC): {UserId}", normalizedNic);
+        }
+        catch (MongoWriteException ex) when (ex.WriteError?.Code == 11000 || ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+        {
+            _logger.LogWarning(ex, "Duplicate key collision during prosumer registration for NIC: {NIC}", normalizedNic);
+            throw new ConflictException("An account with the supplied NIC or email already exists.");
+        }
+        catch (MongoException ex) when (ex.Message.Contains("11000") || ex.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(ex, "Duplicate key collision during prosumer registration for NIC: {NIC}", normalizedNic);
+            throw new ConflictException("An account with the supplied NIC or email already exists.");
+        }
+
+        // 10. Return response
+        return new RegisterProsumerResponse
+        {
+            UserId = normalizedNic,
+            AccountStatus = AccountStatus.Pending.ToString(),
+            Message = "Registration successful. Your account is awaiting Backoffice approval."
+        };
+    }
 }

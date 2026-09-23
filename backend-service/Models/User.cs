@@ -28,6 +28,9 @@ public class User
     [BsonElement("phoneNumber")]
     public string PhoneNumber { get; set; } = string.Empty;
 
+    [BsonElement("address")]
+    public string Address { get; set; } = string.Empty;
+
     [BsonElement("nic")]
     public string NIC { get; set; } = string.Empty;
 

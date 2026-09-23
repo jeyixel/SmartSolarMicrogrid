@@ -58,6 +58,12 @@ public class ExceptionHandlingMiddleware
                 _logger.LogWarning(ex, "Forbidden access due to account status: {Message}", ex.Message);
                 break;
 
+            case ConflictException:
+                statusCode = StatusCodes.Status409Conflict;
+                message = ex.Message;
+                _logger.LogWarning(ex, "Conflict error: {Message}", ex.Message);
+                break;
+
             case ArgumentException or BadHttpRequestException:
                 statusCode = StatusCodes.Status400BadRequest;
                 message = ex.Message;

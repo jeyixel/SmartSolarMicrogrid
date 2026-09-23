@@ -3,7 +3,7 @@
  * IT Number: IT23163690
  * Component: User Identity and Account Management
  * File Purpose: Controller handling user authentication and login endpoints.
- * Last Modified: 2026-09-22
+ * Last Modified: 2026-09-23
  */
 
 using System.Security.Claims;
@@ -37,6 +37,18 @@ public class AuthController : ControllerBase
         // Delegate authentication to the authentication service and return JWT response.
         var response = await _authenticationService.AuthenticateAsync(request, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpPost("register-prosumer")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegisterProsumerResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<RegisterProsumerResponse>> RegisterProsumer([FromBody] RegisterProsumerRequest request, CancellationToken cancellationToken)
+    {
+        // Delegate prosumer registration to authentication service and return 201 Created.
+        var response = await _authenticationService.RegisterProsumerAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, response);
     }
 
     [HttpGet("me")]
