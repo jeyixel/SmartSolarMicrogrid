@@ -50,4 +50,25 @@ public class User
 
     [BsonElement("updatedAt")]
     public DateTime? UpdatedAt { get; set; }
+
+    [BsonElement("activatedAt")]
+    public DateTime? ActivatedAt { get; set; }
+
+    [BsonElement("activatedBy")]
+    public string? ActivatedBy { get; set; }
+
+    [BsonElement("deactivationRequestedAt")]
+    public DateTime? DeactivationRequestedAt { get; set; }
+
+    [BsonElement("deactivatedAt")]
+    public DateTime? DeactivatedAt { get; set; }
+
+    [BsonElement("deactivatedBy")]
+    public string? DeactivatedBy { get; set; }
+
+    [BsonElement("reactivatedAt")]
+    public DateTime? ReactivatedAt { get; set; }
+
+    [BsonElement("reactivatedBy")]
+    public string? ReactivatedBy { get; set; }
 }
