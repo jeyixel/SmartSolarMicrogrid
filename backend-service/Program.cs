@@ -158,7 +158,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: CorsPolicyName, policy =>
     {
         // Configure the permitted frontend origin, headers, and HTTP methods.
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -188,6 +188,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
 
 app.UseCors(CorsPolicyName);
 
