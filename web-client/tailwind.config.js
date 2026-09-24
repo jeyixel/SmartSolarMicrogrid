@@ -1,4 +1,4 @@
-import animate from "tailwindcss-animate";
+﻿import animate from "tailwindcss-animate";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -9,10 +9,29 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['"Hanken Grotesk"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: '0.125rem',
+        DEFAULT: '0.25rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
+        full: '9999px',
+      },
+      spacing: {
+        'gutter': '1rem',
+        'gutter-dense': '0.5rem',
+        'margin': '1.5rem',
+        'margin-mobile': '1rem',
+        'space-xs': '0.25rem',
+        'space-sm': '0.5rem',
+        'space-md': '0.75rem',
+        'space-lg': '1.25rem',
+        'space-xl': '1.75rem',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -48,13 +67,6 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))'
-        }
       },
       keyframes: {
         'accordion-down': {
@@ -72,5 +84,91 @@ export default {
       }
     }
   },
-  plugins: [animate],
+  plugins: [
+    animate,
+    function ({ addUtilities }) {
+      addUtilities({
+        '.text-display-lg': {
+          fontFamily: '"Hanken Grotesk", sans-serif',
+          fontSize: '32px',
+          fontWeight: '700',
+          lineHeight: '40px',
+          letterSpacing: '-0.02em',
+        },
+        '.text-display-lg-mobile': {
+          fontFamily: '"Hanken Grotesk", sans-serif',
+          fontSize: '26px',
+          fontWeight: '700',
+          lineHeight: '34px',
+          letterSpacing: '-0.015em',
+        },
+        '.text-headline-lg': {
+          fontFamily: '"Hanken Grotesk", sans-serif',
+          fontSize: '24px',
+          fontWeight: '600',
+          lineHeight: '32px',
+          letterSpacing: '-0.015em',
+        },
+        '.text-headline-md': {
+          fontFamily: '"Hanken Grotesk", sans-serif',
+          fontSize: '20px',
+          fontWeight: '600',
+          lineHeight: '28px',
+          letterSpacing: '-0.01em',
+        },
+        '.text-headline-sm': {
+          fontFamily: '"Hanken Grotesk", sans-serif',
+          fontSize: '16px',
+          fontWeight: '600',
+          lineHeight: '24px',
+          letterSpacing: '-0.005em',
+        },
+        '.text-body-lg': {
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '15px',
+          fontWeight: '400',
+          lineHeight: '22px',
+        },
+        '.text-body-md': {
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '13px',
+          fontWeight: '400',
+          lineHeight: '18px',
+        },
+        '.text-body-sm': {
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '12px',
+          fontWeight: '400',
+          lineHeight: '16px',
+        },
+        '.text-telemetry-lg': {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '20px',
+          fontWeight: '600',
+          lineHeight: '24px',
+          letterSpacing: '-0.02em',
+        },
+        '.text-telemetry-md': {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '13px',
+          fontWeight: '500',
+          lineHeight: '18px',
+          letterSpacing: '-0.01em',
+        },
+        '.text-label-md': {
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '12px',
+          fontWeight: '500',
+          lineHeight: '16px',
+        },
+        '.text-label-sm': {
+          fontFamily: '"JetBrains Mono", monospace',
+          fontSize: '11px',
+          fontWeight: '500',
+          lineHeight: '14px',
+          letterSpacing: '0.02em',
+        }
+      })
+    }
+  ],
 }

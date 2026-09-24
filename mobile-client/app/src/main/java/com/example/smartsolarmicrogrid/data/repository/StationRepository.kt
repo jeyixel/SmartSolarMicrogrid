@@ -22,8 +22,13 @@ import java.io.IOException
  * (adding a cache, changing endpoints) touches nothing above it.
  */
 class StationRepository(
-    private val api: StationApiService = ApiClient.stationApi
+    // Resolved lazily so that ApiClient.init() has run before the Retrofit
+    // instance (and its auth interceptor) is built.
+    apiProvider: () -> StationApiService = { ApiClient.stationApi }
 ) {
+
+    private val api: StationApiService by lazy(apiProvider)
+
 
     suspend fun getNearbyStations(
         latitude: Double,

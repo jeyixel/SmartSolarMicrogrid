@@ -16,6 +16,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.smartsolarmicrogrid.R
 import com.example.smartsolarmicrogrid.data.model.StationDetailDto
 import com.example.smartsolarmicrogrid.data.model.StationMapSummaryDto
+import com.example.smartsolarmicrogrid.data.remote.ApiClient
 import com.example.smartsolarmicrogrid.data.repository.StationRepository
 import com.example.smartsolarmicrogrid.databinding.ActivityNearbyStationsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -87,6 +88,10 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         binding = ActivityNearbyStationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Gives the auth interceptor access to the stored JWT before the first
+        // station request is made.
+        ApiClient.init(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
