@@ -263,8 +263,10 @@ var app = builder.Build();
 
 // ── Pipeline ─────────────────────────────────────────────────────────────────
 
-// First, so it can catch anything thrown further down.
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+// First, so it can catch anything thrown further down. Fully qualified because
+// both modules defined a class of this name; Member 1's version is used since
+// it also translates the identity module's exceptions.
+app.UseMiddleware<backend_service.Middleware.ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

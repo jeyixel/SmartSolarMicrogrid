@@ -76,11 +76,29 @@ export default {
         'accordion-up': {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' }
+        },
+        // Dashboard entrance: cards lift into place rather than snapping in.
+        'rise-in': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' }
+        },
+        // Slow shimmer behind the hero band, so a static page still feels live.
+        'drift': {
+          '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+          '50%': { transform: 'translate3d(0,-6px,0) scale(1.04)' }
+        },
+        // Pulsing ring on the "live" indicator.
+        'ping-soft': {
+          '0%': { transform: 'scale(1)', opacity: '0.7' },
+          '75%, 100%': { transform: 'scale(2.2)', opacity: '0' }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out'
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'rise-in': 'rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'drift': 'drift 9s ease-in-out infinite',
+        'ping-soft': 'ping-soft 2s cubic-bezier(0, 0, 0.2, 1) infinite'
       }
     }
   },

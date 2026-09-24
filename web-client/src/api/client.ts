@@ -8,7 +8,6 @@ import type {
   StationListQuery,
   StationSummary,
   UpdateStationRequest,
-  UserRole,
 } from './types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)
@@ -68,21 +67,22 @@ export class NetworkError extends Error {
 /**
  * Identity for the current session.
  *
- * Member 1 owns authentication. Until their login exists, the role is chosen in
- * the header and sent as the debug headers the backend's development handler
- * reads. When the real scheme lands, this is the one place that changes: set
- * `Authorization: Bearer <token>` instead and delete the debug headers.
+ * Member 1's real login now exists: the JWT it issues is stored in
+ * sessionStorage under "auth_token" (see AuthContext) and read fresh on every
+ * request. The debug headers the backend's development auth handler used to
+ * read are gone along with that handler - a real bearer token is the only
+ * thing the API accepts now.
  */
-let currentRole: UserRole = 'Backoffice';
-let currentUserId = 'web-user';
+const AUTH_TOKEN_STORAGE_KEY = 'auth_token';
 
-export function setIdentity(role: UserRole, userId?: string): void {
-  currentRole = role;
-  if (userId) currentUserId = userId;
-}
-
-export function getIdentity(): { role: UserRole; userId: string } {
-  return { role: currentRole, userId: currentUserId };
+function getAuthToken(): string | null {
+  try {
+    return sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  } catch {
+    // sessionStorage can throw in a locked-down browsing context; treat that
+    // the same as "not signed in" rather than crashing the request.
+    return null;
+  }
 }
 
 async function request<T>(
@@ -96,9 +96,10 @@ async function request<T>(
     headers.set('Content-Type', 'application/json');
   }
 
-  // Replace this pair with the bearer token once Member 1's login exists.
-  headers.set('X-Debug-Role', currentRole);
-  headers.set('X-Debug-UserId', currentUserId);
+  const token = getAuthToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   let response: Response;
   try {

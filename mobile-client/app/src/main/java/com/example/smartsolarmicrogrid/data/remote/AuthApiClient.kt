@@ -3,6 +3,7 @@ package com.example.smartsolarmicrogrid.data.remote
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.example.smartsolarmicrogrid.BuildConfig
 import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.remote.dto.LoginRequestDto
 import com.example.smartsolarmicrogrid.data.remote.dto.LoginResponseDto
@@ -439,7 +440,14 @@ class AuthApiClient(
 
     companion object {
         private const val TAG = "AuthApiClient"
-        const val DEFAULT_BASE_URL = "http://localhost:5127/"
+        /**
+         * Set from Gradle (see app/build.gradle.kts) so every client in the
+         * app targets the same backend. It must NOT be "localhost": inside the
+         * emulator localhost is the emulator itself, so the host machine's API
+         * is reached at 10.0.2.2, and a physical device needs the machine's
+         * LAN address instead.
+         */
+        const val DEFAULT_BASE_URL = BuildConfig.API_BASE_URL
         private const val CONNECT_TIMEOUT_MS = 10000
         private const val READ_TIMEOUT_MS = 10000
     }
