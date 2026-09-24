@@ -1,0 +1,58 @@
+## ─── Backend (.NET) ───────────────────────────────
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+[Pp]ublish/
+*[Pp]ublish[Pp]rofiles/
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# Local secrets — appsettings.json IS committed as a template.
+appsettings.Development.json
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+
+## ─── Web client (Node / Vite) ─────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+## ─── Mobile client (Android / Gradle) ─────────────
+.gradle/
+build/
+local.properties
+captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+google-services.json
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.externalNativeBuild/
+
+## ─── Environment / secrets (all projects) ─────────
+.env
+.env.*
+!.env.example
+
+## ─── OS ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
