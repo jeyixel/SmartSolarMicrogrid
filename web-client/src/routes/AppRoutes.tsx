@@ -3,6 +3,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
 import BackofficeLayout from '../components/layout/BackofficeLayout';
+import OperatorLayout from '../components/layout/OperatorLayout';
 import BackofficeDashboardPage from '../pages/backoffice/BackofficeDashboardPage';
 import UserListPage from '../pages/backoffice/UserListPage';
 import CreateStaffUserPage from '../pages/backoffice/CreateStaffUserPage';
@@ -15,6 +16,7 @@ import { AppLayout } from '../components/AppLayout';
 import { StationListPage } from '../pages/StationListPage';
 import { StationFormPage } from '../pages/StationFormPage';
 import { StationDetailPage } from '../pages/StationDetailPage';
+import { OperatorDashboardPage } from '../pages/operator/OperatorDashboardPage';
 
 function Placeholder({ title }: { title: string }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -76,20 +78,35 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      {/* Grid Operator Protected Routes */}
+      {/*
+        Grid Operator Protected Routes. Its own sidebar shell (matching
+        BackofficeLayout's pattern) instead of the plain AppLayout header, so
+        a Grid Operator sees one consistent portal across the dashboard and
+        the station pages rather than the shell changing mid-navigation.
+        Creation ("/stations/new") is intentionally left out: the API refuses
+        it for this role, and the UI should not offer what it cannot do.
+      */}
       <Route element={<ProtectedRoute requiredRole={1} />}>
         <Route
-          path="/operator/dashboard"
-          element={<Placeholder title="Grid Operator dashboard" />}
-        />
+          element={
+            <SessionProvider>
+              <OperatorLayout />
+            </SessionProvider>
+          }
+        >
+          <Route path="/operator/dashboard" element={<OperatorDashboardPage />} />
+          <Route path="/stations" element={<StationListPage />} />
+          <Route path="/stations/:id" element={<StationDetailPage />} />
+          <Route path="/stations/:id/edit" element={<StationFormPage />} />
+        </Route>
       </Route>
 
       {/*
-        Member 2: microgrid node management. Open to any signed-in staff user,
-        so no requiredRole is given - the API still enforces which role may
-        create, edit or deactivate a station.
+        Member 2: microgrid node management for Backoffice, under the same
+        AppLayout header shell station pages have always used. Full CRUD:
+        Backoffice is the only role that may create a station.
       */}
-      <Route element={<ProtectedRoute />}>
+      <Route element={<ProtectedRoute requiredRole={0} />}>
         <Route
           element={
             <SessionProvider>
