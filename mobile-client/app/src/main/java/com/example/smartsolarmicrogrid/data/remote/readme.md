@@ -1,1 +1,0 @@
-Contains RESTful API client configuration and endpoints to communicate with the central C# Web Service
