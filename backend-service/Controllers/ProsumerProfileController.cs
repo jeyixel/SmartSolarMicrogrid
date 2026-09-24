@@ -38,6 +38,32 @@ public class ProsumerProfileController : ControllerBase
         _usersCollection = database.GetCollection<User>(collectionName);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<UserResponseDto>> GetMyProfile(
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(new { message = "User identity is missing." });
+        }
+
+        var filter = Builders<User>.Filter.And(
+            Builders<User>.Filter.Eq(user => user.Id, userId),
+            Builders<User>.Filter.Eq(user => user.Role, UserRole.Prosumer)
+        );
+
+        var user = await _usersCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
+
+        if (user is null)
+        {
+            return NotFound(new { message = "User profile not found." });
+        }
+
+        return Ok(UserResponseDto.FromUser(user));
+    }
+
     [HttpPut]
     public async Task<ActionResult<UserResponseDto>> UpdateMyProfile(
         [FromBody] UpdateUserProfileRequestDto request,
@@ -105,6 +131,7 @@ public class ProsumerProfileController : ControllerBase
         }
     }
 
+    [HttpPost("/api/prosumer/deactivation-request")]
     [HttpPost("/api/prosumer/account/deactivation-request")]
     public async Task<ActionResult<UserResponseDto>> RequestDeactivation(
         CancellationToken cancellationToken)

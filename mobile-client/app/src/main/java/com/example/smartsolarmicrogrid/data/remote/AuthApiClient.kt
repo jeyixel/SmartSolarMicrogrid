@@ -208,6 +208,185 @@ class AuthApiClient(
         }
     }
 
+    fun getProsumerProfile(
+        token: String,
+        callback: (ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto>) -> Unit
+    ) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val endpointUrl = URL("${baseUrl}api/prosumer/profile")
+                connection = (endpointUrl.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    doInput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                val responseCode = connection.responseCode
+                val responseBody = readStream(
+                    if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                )
+
+                Log.d(TAG, "getProsumerProfile status: $responseCode, response: $responseBody")
+
+                val result = when (responseCode) {
+                    HttpURLConnection.HTTP_OK -> {
+                        val profile = com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto.fromJson(responseBody)
+                        ApiResponse.Success(profile, responseCode)
+                    }
+                    HttpURLConnection.HTTP_UNAUTHORIZED -> {
+                        val message = parseErrorMessage(responseBody) ?: "Session expired. Please sign in again."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    HttpURLConnection.HTTP_FORBIDDEN -> {
+                        val message = parseErrorMessage(responseBody) ?: "Access forbidden."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    else -> {
+                        val message = parseErrorMessage(responseBody) ?: "Failed to load profile (HTTP $responseCode)"
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                }
+
+                postResult(result, callback)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "getProsumerProfile connection failure", e)
+                postResult(ApiResponse.NetworkFailure(e), callback)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
+    fun updateProsumerProfile(
+        token: String,
+        request: com.example.smartsolarmicrogrid.data.remote.dto.UpdateUserProfileRequestDto,
+        callback: (ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto>) -> Unit
+    ) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val endpointUrl = URL("${baseUrl}api/prosumer/profile")
+                connection = (endpointUrl.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "PUT"
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    doInput = true
+                    doOutput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    setRequestProperty("Accept", "application/json")
+                }
+
+                OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { writer ->
+                    writer.write(request.toJson())
+                    writer.flush()
+                }
+
+                val responseCode = connection.responseCode
+                val responseBody = readStream(
+                    if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                )
+
+                Log.d(TAG, "updateProsumerProfile status: $responseCode, response: $responseBody")
+
+                val result = when (responseCode) {
+                    HttpURLConnection.HTTP_OK -> {
+                        val profile = com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto.fromJson(responseBody)
+                        ApiResponse.Success(profile, responseCode)
+                    }
+                    HttpURLConnection.HTTP_BAD_REQUEST -> {
+                        val fieldErrors = parseValidationErrors(responseBody)
+                        val message = parseErrorMessage(responseBody) ?: "Invalid profile input."
+                        ApiResponse.ValidationError(fieldErrors, message)
+                    }
+                    HttpURLConnection.HTTP_CONFLICT -> {
+                        val message = parseErrorMessage(responseBody) ?: "Email is already in use."
+                        ApiResponse.Conflict(message)
+                    }
+                    HttpURLConnection.HTTP_UNAUTHORIZED -> {
+                        val message = parseErrorMessage(responseBody) ?: "Session expired. Please sign in again."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    else -> {
+                        val message = parseErrorMessage(responseBody) ?: "Update failed (HTTP $responseCode)"
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                }
+
+                postResult(result, callback)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "updateProsumerProfile connection failure", e)
+                postResult(ApiResponse.NetworkFailure(e), callback)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
+    fun requestDeactivation(
+        token: String,
+        callback: (ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto>) -> Unit
+    ) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val endpointUrl = URL("${baseUrl}api/prosumer/deactivation-request")
+                connection = (endpointUrl.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    doInput = true
+                    doOutput = true
+                    setRequestProperty("Authorization", "Bearer $token")
+                    setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    setRequestProperty("Accept", "application/json")
+                    setFixedLengthStreamingMode(0)
+                }
+
+                val responseCode = connection.responseCode
+                val responseBody = readStream(
+                    if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                )
+
+                Log.d(TAG, "requestDeactivation status: $responseCode, response: $responseBody")
+
+                val result = when (responseCode) {
+                    HttpURLConnection.HTTP_OK -> {
+                        val profile = com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto.fromJson(responseBody)
+                        ApiResponse.Success(profile, responseCode)
+                    }
+                    HttpURLConnection.HTTP_CONFLICT -> {
+                        val message = parseErrorMessage(responseBody)
+                            ?: "Account is not active or deactivation was already requested."
+                        ApiResponse.Conflict(message)
+                    }
+                    HttpURLConnection.HTTP_UNAUTHORIZED -> {
+                        val message = parseErrorMessage(responseBody) ?: "Session expired. Please sign in again."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    else -> {
+                        val message = parseErrorMessage(responseBody) ?: "Deactivation request failed (HTTP $responseCode)"
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                }
+
+                postResult(result, callback)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "requestDeactivation connection failure", e)
+                postResult(ApiResponse.NetworkFailure(e), callback)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
     private fun readStream(inputStream: java.io.InputStream?): String {
         if (inputStream == null) return ""
         return BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).use { reader ->

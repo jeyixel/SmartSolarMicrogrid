@@ -11,6 +11,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace backend_service.Models;
 
+[BsonIgnoreExtraElements]
 public class User
 {
     [BsonId]

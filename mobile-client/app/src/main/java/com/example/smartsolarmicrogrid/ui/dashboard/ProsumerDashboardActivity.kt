@@ -21,6 +21,7 @@ class ProsumerDashboardActivity : AppCompatActivity() {
     private lateinit var tvWelcomeUser: TextView
     private lateinit var tvUserNic: TextView
     private lateinit var tvUserRoleStatus: TextView
+    private lateinit var btnManageProfile: MaterialButton
     private lateinit var btnLogout: MaterialButton
 
     private lateinit var authSessionDao: AuthSessionDao
@@ -44,10 +45,16 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         setupListeners()
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadSessionData()
+    }
+
     private fun initViews() {
         tvWelcomeUser = findViewById(R.id.tvWelcomeUser)
         tvUserNic = findViewById(R.id.tvUserNic)
         tvUserRoleStatus = findViewById(R.id.tvUserRoleStatus)
+        btnManageProfile = findViewById(R.id.btnManageProfile)
         btnLogout = findViewById(R.id.btnLogout)
     }
 
@@ -66,6 +73,11 @@ class ProsumerDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        btnManageProfile.setOnClickListener {
+            val intent = Intent(this, com.example.smartsolarmicrogrid.ui.profile.ProfileActivity::class.java)
+            startActivity(intent)
+        }
+
         btnLogout.setOnClickListener {
             performLogout()
         }
