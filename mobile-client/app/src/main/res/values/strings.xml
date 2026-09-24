@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">SmartSolarMicrogrid</string>
+    <string name="login_title">Smart Solar Microgrid</string>
+    <string name="login_subtitle">Sign in to manage and monitor microgrid operations</string>
+    <string name="login_identifier_hint">Email or NIC</string>
+    <string name="login_identifier_helper">Enter your registered email address or NIC</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_error_empty_identifier">Email or NIC is required</string>
+    <string name="login_error_empty_password">Password is required</string>
 </resources>
