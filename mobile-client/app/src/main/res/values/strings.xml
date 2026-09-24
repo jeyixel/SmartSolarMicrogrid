@@ -8,4 +8,52 @@
     <string name="login_button">Sign In</string>
     <string name="login_error_empty_identifier">Email or NIC is required</string>
     <string name="login_error_empty_password">Password is required</string>
+    <string name="login_register_prompt">Don\'t have an account? Register as Prosumer</string>
+
+    <!-- Registration Strings -->
+    <string name="register_title">Prosumer Registration</string>
+    <string name="register_subtitle">Register your smart solar prosumer account</string>
+    <string name="register_nic_hint">National Identity Card (NIC)</string>
+    <string name="register_nic_helper">12 digits or 9 digits followed by V or X</string>
+    <string name="register_full_name_hint">Full Name</string>
+    <string name="register_email_hint">Email Address</string>
+    <string name="register_phone_hint">Phone Number</string>
+    <string name="register_phone_helper">10 digits starting with 0 (e.g., 0771234567)</string>
+    <string name="register_address_hint">Address</string>
+    <string name="register_password_hint">Password</string>
+    <string name="register_password_helper">Min 8 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char</string>
+    <string name="register_confirm_password_hint">Confirm Password</string>
+    <string name="register_button">Register Account</string>
+    <string name="register_login_prompt">Already have an account? Sign In</string>
+
+    <!-- Validation Error Strings -->
+    <string name="err_nic_required">NIC is required</string>
+    <string name="err_nic_format">NIC must contain either 12 digits or 9 digits followed by V or X</string>
+    <string name="err_full_name_required">Full name is required</string>
+    <string name="err_full_name_length">Full name must be between 2 and 100 characters</string>
+    <string name="err_email_required">Email is required</string>
+    <string name="err_email_invalid">Invalid email format</string>
+    <string name="err_phone_required">Phone number is required</string>
+    <string name="err_phone_format">Phone number must contain 10 digits and begin with 0</string>
+    <string name="err_address_required">Address is required</string>
+    <string name="err_address_length">Address must be between 5 and 250 characters</string>
+    <string name="err_password_required">Password is required</string>
+    <string name="err_password_whitespace">Password cannot begin or end with whitespace</string>
+    <string name="err_password_length">Password must be between 8 and 72 characters</string>
+    <string name="err_password_uppercase">Password must contain at least one uppercase letter</string>
+    <string name="err_password_lowercase">Password must contain at least one lowercase letter</string>
+    <string name="err_password_digit">Password must contain at least one numerical digit</string>
+    <string name="err_password_special">Password must contain at least one special character</string>
+    <string name="err_confirm_password_required">Please confirm your password</string>
+    <string name="err_confirm_password_mismatch">Passwords do not match</string>
+
+    <!-- Dialog / Feedback Strings -->
+    <string name="reg_success_title">Registration Submitted</string>
+    <string name="reg_success_status_pending">Account Status: Pending Approval</string>
+    <string name="reg_go_to_login">Go to Login</string>
+    <string name="network_error_title">Connection Error</string>
+    <string name="network_error_msg">Unable to reach the Smart Solar Microgrid API server. Please check your network connection and server status.</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="dismiss">Dismiss</string>
 </resources>
