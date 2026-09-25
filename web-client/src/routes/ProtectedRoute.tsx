@@ -1,21 +1,23 @@
-import React, { ReactNode } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-  /** Future: restrict access by role. Currently a no-op passthrough. */
-  allowedRoles?: string[];
-}
-
-/**
- * Dummy ProtectedRoute — passes children through without any auth checks.
- *
- * This is intentionally a passthrough while the User Management module is pending.
- * When the real auth system is integrated, replace this with:
- *   1. Check useAuth().user is authenticated
- *   2. Check user.role is in allowedRoles (if specified)
- *   3. Redirect to /login if not authenticated
- *   4. Return <Forbidden /> if role not permitted
- */
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  return <>{children}</>;
+type Props = {
+  requiredRole?: 0 | 1;
 };
+
+export default function ProtectedRoute({ requiredRole }: Props) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) return <p>Checking your session...</p>;
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (user.status !== 1 || (requiredRole !== undefined && user.role !== requiredRole)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  return <Outlet />;
+}
