@@ -15,7 +15,8 @@ import { useAuth } from '../contexts/AuthContext';
  * Uses updated model fields: prosumerNIC (was prosumerId), stationId (was gridNodeId).
  */
 export const BackofficeView: React.FC = () => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id || '';
   const [reservations, setReservations] = useState<EnergyReservation[]>([]);
   const [slots, setSlots]               = useState<Record<string, EnergyBookingSlot>>({});
   const [loading, setLoading]           = useState(true);

@@ -11,7 +11,8 @@ import { useAuth } from '../contexts/AuthContext';
  * Uses updated model fields: stationId, energyAmountKWh, actionType.
  */
 export const GridOperatorView: React.FC = () => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id || '';
   const [slots, setSlots]           = useState<EnergyBookingSlot[]>([]);
   const [loading, setLoading]       = useState(true);
   const [newSlotStart, setNewSlotStart] = useState('');

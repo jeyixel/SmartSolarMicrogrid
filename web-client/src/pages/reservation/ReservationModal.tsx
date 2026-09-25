@@ -43,7 +43,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   onSuccess,
   editReservation,
 }) => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id || '';
   const isEdit = !!editReservation;
 
   // Dropdown data

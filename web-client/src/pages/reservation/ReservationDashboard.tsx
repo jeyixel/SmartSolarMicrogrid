@@ -90,7 +90,8 @@ const KpiChip: React.FC<{ label: string; count: number; dotClass: string }> = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const ReservationDashboard: React.FC = () => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id || '';
   const [enriched, setEnriched]     = useState<EnrichedReservation[]>([]);
   const [loading, setLoading]        = useState(true);
   const [modalOpen, setModalOpen]    = useState(false);

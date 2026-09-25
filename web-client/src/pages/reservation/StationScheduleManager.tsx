@@ -49,7 +49,8 @@ const StationStatusBadge: React.FC<{ status: string }> = ({ status }) => {
  *   4. Remove existing blocks (DELETE /api/stations/{code}/schedule/{index}).
  */
 export const StationScheduleManager: React.FC = () => {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id || '';
 
   const [stations,      setStations]      = useState<SolarStation[]>([]);
   const [selectedCode,  setSelectedCode]  = useState<string>('');
