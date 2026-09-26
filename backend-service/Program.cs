@@ -72,8 +72,12 @@ builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
 // Bind Bootstrap Admin configuration settings
-builder.Services.Configure<BootstrapAdminSettings>(
-    builder.Configuration.GetSection("BootstrapAdmin"));
+var adminSection = builder.Configuration.GetSection("BootstrapAdmin");
+if (!adminSection.Exists() || !adminSection.GetChildren().Any())
+{
+    adminSection = builder.Configuration.GetSection("BootstrapAdminSettings");
+}
+builder.Services.Configure<BootstrapAdminSettings>(adminSection);
 
 // Register application services
 builder.Services.AddScoped<IPasswordService, PasswordService>();
@@ -173,8 +177,14 @@ builder.Services.AddCors(options =>
 });
 
 // Setup MongoDB
-var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDb") ?? "mongodb://localhost:27017");
-var mongoDatabase = mongoClient.GetDatabase("SmartSolarMicrogrid");
+var mongoConnString = builder.Configuration.GetConnectionString("MongoDb")
+    ?? builder.Configuration["MongoDbSettings:ConnectionString"]
+    ?? "mongodb://localhost:27017";
+var defaultDatabaseName = builder.Configuration["ConnectionStrings:DatabaseName"]
+    ?? builder.Configuration["MongoDbSettings:DatabaseName"]
+    ?? "SmartSolarMicrogridDB";
+var mongoClient = new MongoClient(mongoConnString);
+var mongoDatabase = mongoClient.GetDatabase(defaultDatabaseName);
 builder.Services.AddSingleton(mongoDatabase);
 
 // ─── Reservation Domain DI (Member 3) ─────────────────────────────────────────
@@ -219,12 +229,14 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-app.UseCors("AllowAll");
-app.UseHttpsRedirection();
-
 app.UseRouting();
 
-app.UseCors(CorsPolicyName);
+app.UseCors("AllowAll");
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 
