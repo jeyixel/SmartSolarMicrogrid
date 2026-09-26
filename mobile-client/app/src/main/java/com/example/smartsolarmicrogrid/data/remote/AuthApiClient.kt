@@ -21,7 +21,7 @@ import java.util.concurrent.Executors
  * Communicates with ASP.NET Core backend over HTTP/REST.
  */
 class AuthApiClient(
-    private val baseUrl: String = DEFAULT_BASE_URL
+    private val baseUrl: String = ApiConfig.getBaseUrl()
 ) {
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -439,7 +439,7 @@ class AuthApiClient(
 
     companion object {
         private const val TAG = "AuthApiClient"
-        const val DEFAULT_BASE_URL = "http://localhost:5127/"
+        val DEFAULT_BASE_URL: String get() = ApiConfig.getBaseUrl()
         private const val CONNECT_TIMEOUT_MS = 10000
         private const val READ_TIMEOUT_MS = 10000
     }
