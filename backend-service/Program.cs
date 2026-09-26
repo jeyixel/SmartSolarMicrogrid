@@ -7,6 +7,7 @@
  */
 
 using System.Text;
+using backend_service.Data;
 using backend_service.Middleware;
 using backend_service.Models;
 using backend_service.Services;
@@ -15,12 +16,19 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Configure MongoDB conventions: ignore extra elements across all documents globally
+var conventionPack = new ConventionPack
+{
+    new IgnoreExtraElementsConvention(true)
+};
+ConventionRegistry.Register("GlobalConventions", conventionPack, type => true);
 
+// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -164,6 +172,30 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Setup MongoDB
+var mongoClient = new MongoClient(builder.Configuration.GetConnectionString("MongoDb") ?? "mongodb://localhost:27017");
+var mongoDatabase = mongoClient.GetDatabase("SmartSolarMicrogrid");
+builder.Services.AddSingleton(mongoDatabase);
+
+// ─── Reservation Domain DI (Member 3) ─────────────────────────────────────────
+// Repositories
+builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
+builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
+builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
+
+// Services (FAT pattern — all business logic lives here)
+builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
+builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
+// ──────────────────────────────────────────────────────────────────────────────
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Global exception handling middleware
@@ -187,6 +219,7 @@ if (app.Environment.IsDevelopment())
     }
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 
 app.UseRouting();
@@ -196,7 +229,6 @@ app.UseCors(CorsPolicyName);
 app.UseAuthentication();
 
 app.UseAuthorization();
-
 app.MapControllers();
 
 await app.RunAsync();
