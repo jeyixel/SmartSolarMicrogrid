@@ -9,6 +9,11 @@ import CreateStaffUserPage from '../pages/backoffice/CreateStaffUserPage';
 import PendingRegistrationsPage from '../pages/backoffice/PendingRegistrationsPage';
 import DeactivationRequestsPage from '../pages/backoffice/DeactivationRequestsPage';
 import UserDetailsPage from '../pages/backoffice/UserDetailsPage';
+import GridOperatorLayout from '../components/layout/GridOperatorLayout';
+import GridOperatorDashboardPage from '../pages/operator/GridOperatorDashboardPage';
+import { ReservationDashboard } from '../pages/reservation/ReservationDashboard';
+import { StationScheduleManager } from '../pages/reservation/StationScheduleManager';
+import { GridOperatorView } from '../components/GridOperatorView';
 
 function Placeholder({ title }: { title: string }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -72,10 +77,12 @@ export default function AppRoutes() {
 
       {/* Grid Operator Protected Routes */}
       <Route element={<ProtectedRoute requiredRole={1} />}>
-        <Route
-          path="/operator/dashboard"
-          element={<Placeholder title="Grid Operator dashboard" />}
-        />
+        <Route element={<GridOperatorLayout />}>
+          <Route path="/operator/dashboard" element={<GridOperatorDashboardPage />} />
+          <Route path="/operator/reservations" element={<ReservationDashboard />} />
+          <Route path="/operator/stations" element={<StationScheduleManager />} />
+          <Route path="/operator/slots" element={<GridOperatorView />} />
+        </Route>
       </Route>
 
       {/* Fallback 404 Route */}
