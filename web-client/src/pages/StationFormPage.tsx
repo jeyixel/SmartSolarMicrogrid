@@ -59,6 +59,16 @@ export function StationFormPage() {
 
   const isEdit = Boolean(id);
 
+  /**
+   * The API enforces this exact split server-side (StationService's
+   * FindRestrictedFieldChanges): a Grid Operator editing a station may change
+   * only available battery slots, contact phone and the operational schedule.
+   * Everything else is disabled here so a Grid Operator never fills in a
+   * field the request will then be rejected for - the restriction is shown up
+   * front rather than discovered after a failed submit.
+   */
+  const canEditFullDetails = isBackoffice;
+
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [localErrors, setLocalErrors] = useState<LocalErrors>({});
   const [submitError, setSubmitError] = useState<unknown>(null);
@@ -306,14 +316,24 @@ export function StationFormPage() {
             {isEdit ? 'Edit station' : 'Register station'}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {isEdit
-              ? 'Update the node’s details, position, capacity and operating hours.'
-              : 'Add a new solar grid hub to the microgrid.'}
+            {!isEdit
+              ? 'Add a new solar grid hub to the microgrid.'
+              : canEditFullDetails
+                ? 'Update the node’s details, position, capacity and operating hours.'
+                : 'Update battery slot availability, contact phone and operating hours.'}
           </p>
         </div>
       </div>
 
       {Boolean(submitError) && <ErrorAlert error={submitError} />}
+
+      {isEdit && !canEditFullDetails && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+          As Grid Operator you may update <strong>available battery slots</strong>,{' '}
+          <strong>contact phone</strong> and the <strong>operating schedule</strong>. Every
+          other field is set by Backoffice and shown here read-only.
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -342,20 +362,33 @@ export function StationFormPage() {
             />
           </Field>
 
-          <Field id="name" label="Station name" required error={localErrors.name}>
+          <Field
+            id="name"
+            label="Station name"
+            required
+            error={localErrors.name}
+            hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+          >
             <Input
               id="name"
               value={form.name}
+              disabled={!canEditFullDetails}
               aria-invalid={Boolean(localErrors.name)}
               onChange={(event) => set('name', event.target.value)}
               placeholder="Colombo North Solar Hub"
             />
           </Field>
 
-          <Field id="addressLine" label="Address" error={localErrors.addressLine}>
+          <Field
+            id="addressLine"
+            label="Address"
+            error={localErrors.addressLine}
+            hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+          >
             <Input
               id="addressLine"
               value={form.addressLine}
+              disabled={!canEditFullDetails}
               onChange={(event) => set('addressLine', event.target.value)}
               placeholder="45 Galle Road, Colombo 03"
             />
@@ -371,10 +404,16 @@ export function StationFormPage() {
           </Field>
 
           <div className="sm:col-span-2">
-            <Field id="description" label="Description" error={localErrors.description}>
+            <Field
+              id="description"
+              label="Description"
+              error={localErrors.description}
+              hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+            >
               <Input
                 id="description"
                 value={form.description}
+                disabled={!canEditFullDetails}
                 onChange={(event) => set('description', event.target.value)}
                 placeholder="Rooftop array, Block B"
               />
@@ -393,22 +432,36 @@ export function StationFormPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="latitude" label="Latitude" required error={localErrors.latitude}>
+            <Field
+              id="latitude"
+              label="Latitude"
+              required
+              error={localErrors.latitude}
+              hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+            >
               <Input
                 id="latitude"
                 inputMode="decimal"
                 value={form.latitude}
+                disabled={!canEditFullDetails}
                 aria-invalid={Boolean(localErrors.latitude)}
                 onChange={(event) => set('latitude', event.target.value)}
                 placeholder="6.927079"
               />
             </Field>
 
-            <Field id="longitude" label="Longitude" required error={localErrors.longitude}>
+            <Field
+              id="longitude"
+              label="Longitude"
+              required
+              error={localErrors.longitude}
+              hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+            >
               <Input
                 id="longitude"
                 inputMode="decimal"
                 value={form.longitude}
+                disabled={!canEditFullDetails}
                 aria-invalid={Boolean(localErrors.longitude)}
                 onChange={(event) => set('longitude', event.target.value)}
                 placeholder="79.861244"
@@ -419,7 +472,7 @@ export function StationFormPage() {
           <LocationPicker
             latitude={pinLatitude}
             longitude={pinLongitude}
-            onChange={handleLocationChange}
+            onChange={canEditFullDetails ? handleLocationChange : undefined}
           />
 
           {/*
@@ -449,11 +502,18 @@ export function StationFormPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Field id="capacityKWh" label="Capacity (kWh)" required error={localErrors.capacityKWh}>
+          <Field
+            id="capacityKWh"
+            label="Capacity (kWh)"
+            required
+            error={localErrors.capacityKWh}
+            hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
+          >
             <Input
               id="capacityKWh"
               inputMode="decimal"
               value={form.capacityKWh}
+              disabled={!canEditFullDetails}
               aria-invalid={Boolean(localErrors.capacityKWh)}
               onChange={(event) => set('capacityKWh', event.target.value)}
               placeholder="250.5"
@@ -465,11 +525,13 @@ export function StationFormPage() {
             label="Total battery slots"
             required
             error={localErrors.totalBatterySlots}
+            hint={!canEditFullDetails ? 'Set by Backoffice.' : undefined}
           >
             <Input
               id="totalBatterySlots"
               inputMode="numeric"
               value={form.totalBatterySlots}
+              disabled={!canEditFullDetails}
               aria-invalid={Boolean(localErrors.totalBatterySlots)}
               onChange={(event) => set('totalBatterySlots', event.target.value)}
               placeholder="20"
