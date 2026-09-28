@@ -1,13 +1,20 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Sun, UserCog } from 'lucide-react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { LogOut, Sun } from 'lucide-react';
 
 import { API_BASE_URL } from '@/api/client';
-import { USER_ROLES, type UserRole } from '@/api/types';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSession } from '@/context/SessionContext';
 import { cn } from '@/lib/utils';
 
 export function AppLayout() {
-  const { role, userId, setRole, isStaff } = useSession();
+  const { role, userId, isStaff } = useSession();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -38,34 +45,24 @@ export function AppLayout() {
             )}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
-            <label htmlFor="role-switcher" className="sr-only">
-              Acting as role
-            </label>
-            <UserCog className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <select
-              id="role-switcher"
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-              value={role}
-              onChange={(event) => setRole(event.target.value as UserRole)}
+          <div className="ml-auto flex items-center gap-3 text-sm">
+            <span className="text-muted-foreground">
+              Signed in as <strong>{user?.fullName ?? userId}</strong> ({role})
+            </span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {USER_ROLES.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              Logout
+            </button>
           </div>
         </div>
 
-        {/*
-          Visible reminder that this is a stand-in. Member 1 owns real
-          authentication; until then the role travels as a debug header, and the
-          backend accepts it only in its Development environment.
-        */}
-        <div className="border-t bg-amber-50 px-6 py-1.5 text-center text-xs text-amber-900">
-          Development mode — acting as <strong>{role}</strong> ({userId}). Real sign-in
-          arrives with the identity module. API: {API_BASE_URL}
+        {/* API target shown for local debugging during the demo. */}
+        <div className="border-t bg-slate-50 px-6 py-1 text-center text-xs text-slate-500">
+          API: {API_BASE_URL}
         </div>
       </header>
 
