@@ -9,14 +9,14 @@ plugins {
 // reaches the repository. A missing key must not break the build for a
 // teammate who has just cloned: we fall back to an empty string, and the map
 // then fails visibly at runtime instead of failing the whole compile.
-val mapsApiKey: String = run {
-    val localProperties = Properties()
+val localProps = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { localProperties.load(it) }
+        localPropertiesFile.inputStream().use { load(it) }
     }
-    localProperties.getProperty("MAPS_API_KEY") ?: ""
 }
+val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY") ?: ""
+val apiBaseUrl: String = localProps.getProperty("API_BASE_URL") ?: "http://10.0.2.2:5127/"
 
 android {
     namespace = "com.example.smartsolarmicrogrid"
@@ -31,15 +31,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Substituted into AndroidManifest.xml at build time as ${MAPS_API_KEY}.
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
-
         // 10.0.2.2 is how the Android emulator reaches localhost on the host
-        // machine; "localhost" inside the emulator means the emulator itself.
+        // machine; for physical devices, set API_BASE_URL in local.properties
+        // or use 'adb reverse tcp:5127 tcp:5127'.
         buildConfigField(
             "String",
             "API_BASE_URL",
-            "\"http://10.0.2.2:5127/\""
+            "\"$apiBaseUrl\"",
         )
     }
 
@@ -75,7 +73,6 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     // Member 2 - map, location, REST
-    implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

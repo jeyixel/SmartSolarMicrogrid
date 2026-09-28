@@ -2,6 +2,7 @@ package com.example.smartsolarmicrogrid.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
@@ -22,16 +23,17 @@ import com.example.smartsolarmicrogrid.databinding.ActivityNearbyStationsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.tasks.CancellationTokenSource
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.Toast
+import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
+import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.Locale
 
 /**
@@ -41,29 +43,19 @@ import java.util.Locale
  * location permission, set up the map, draw markers, and render whatever state
  * the ViewModel publishes. It performs no networking itself.
  */
-class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
+class NearbyStationsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityNearbyStationsBinding
     private val viewModel: NearbyStationsViewModel by viewModels()
 
-    private var googleMap: GoogleMap? = null
+    private lateinit var webView: WebView
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
-    /**
-     * Marker -> station id. A Marker cannot carry a typed object, so the id is
-     * kept beside it and looked up on click. This is how a tapped marker is
-     * resolved back to the station it represents.
-     */
-    private val markerStationIds = mutableMapOf<Marker, String>()
-
     /** Last point the station list was requested for; reused by Retry. */
-    private var lastQueriedLocation: LatLng? = null
+    private var lastQueriedLocationLat = 6.9271
+    private var lastQueriedLocationLng = 79.8612
 
-    /**
-     * Fallback camera position (Colombo), used when the user denies location
-     * or no fix is available. The screen must stay usable in that case.
-     */
-    private val fallbackLocation = LatLng(6.9271, 79.8612)
+    private var mapLoaded = false
 
     /**
      * Android 12+ lets the user grant only approximate location, so the result
@@ -76,76 +68,114 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
         if (granted) {
-            enableMyLocationLayer()
             moveToCurrentLocationAndLoad()
         } else {
             showMessage(getString(R.string.msg_permission_denied))
-            loadStationsAround(fallbackLocation)
+            loadStationsAround(6.9271, 79.8612)
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityNearbyStationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Gives the auth interceptor access to the stored JWT before the first
-        // station request is made.
         ApiClient.init(this)
-
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.mapFragment) as SupportMapFragment
-        // The map is not usable synchronously; onMapReady is the entry point.
-        mapFragment.getMapAsync(this)
+        webView = binding.mapWebView
+        webView.settings.javaScriptEnabled = true
+        webView.addJavascriptInterface(WebAppInterface(), "Android")
+        
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                mapLoaded = true
+                if (!viewModel.hasLoadedOnce) {
+                    requestLocationOrFallback()
+                } else {
+                    updateMapCenter(lastQueriedLocationLat, lastQueriedLocationLng)
+                    (viewModel.uiState.value as? StationsUiState.Success)?.let {
+                        drawMarkers(it.stations)
+                    }
+                }
+            }
+        }
+        webView.loadUrl("file:///android_asset/leaflet_map.html")
 
         binding.retryButton.setOnClickListener {
             hideMessage()
-            loadStationsAround(lastQueriedLocation ?: fallbackLocation)
+            requestLocationOrFallback()
         }
 
         binding.detailsPanel.detailCloseButton.setOnClickListener {
             viewModel.dismissDetails()
         }
 
-        observeViewModel()
-    }
+        // Member 3 Integration Handoff Point
+        binding.detailsPanel.detailBookButton.setOnClickListener {
+            val currentState = viewModel.detailState.value
+            if (currentState is StationDetailUiState.Success) {
+                val stationId = currentState.station.id
+                val stationName = currentState.station.name
+                
+                // Show a Toast to prove the integration works for the Viva
+                Toast.makeText(
+                    this, 
+                    "Handing off to Member 3 Booking...\nStation: $stationName", 
+                    Toast.LENGTH_LONG
+                ).show()
 
-    // -- Map setup -----------------------------------------------------------
-
-    override fun onMapReady(map: GoogleMap) {
-        googleMap = map
-
-        map.uiSettings.isZoomControlsEnabled = true
-        map.uiSettings.isMyLocationButtonEnabled = true
-
-        // Start somewhere sensible so the user never sees the middle of the
-        // ocean while the location fix and the API call are still in flight.
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(fallbackLocation, CITY_ZOOM))
-
-        map.setOnMarkerClickListener { marker ->
-            val stationId = markerStationIds[marker]
-            if (stationId != null) {
-                marker.showInfoWindow()
-                viewModel.loadStationDetails(stationId)
-                true // handled: suppress the default camera recentre
-            } else {
-                false
+                // Intent placeholder for Member 3:
+                /*
+                val intent = Intent(this, BookSlotActivity::class.java).apply {
+                    putExtra("EXTRA_STATION_ID", stationId)
+                    putExtra("EXTRA_STATION_NAME", stationName)
+                }
+                startActivity(intent)
+                */
             }
         }
 
-        // Tapping empty map dismisses the details panel.
-        map.setOnMapClickListener { viewModel.dismissDetails() }
+        setupNavigation()
+        observeViewModel()
+    }
 
-        // Stations already loaded before the map became ready (for example
-        // after a rotation) must be drawn now.
-        (viewModel.uiState.value as? StationsUiState.Success)?.let {
-            drawMarkers(it.stations)
+    private fun setupNavigation() {
+        val topToolbar = findViewById<MaterialToolbar>(R.id.topToolbar)
+        topToolbar.setNavigationOnClickListener {
+            finish()
         }
 
-        if (!viewModel.hasLoadedOnce) {
-            requestLocationOrFallback()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        bottomNav.selectedItemId = R.id.nav_map
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    startActivity(Intent(this, ProsumerDashboardActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    true
+                }
+                R.id.nav_map -> true
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    })
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    inner class WebAppInterface {
+        @JavascriptInterface
+        fun onMarkerClick(stationId: String) {
+            runOnUiThread {
+                viewModel.loadStationDetails(stationId)
+            }
         }
     }
 
@@ -161,7 +191,6 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private fun requestLocationOrFallback() {
         if (hasLocationPermission()) {
-            enableMyLocationLayer()
             moveToCurrentLocationAndLoad()
         } else {
             locationPermissionLauncher.launch(
@@ -173,49 +202,40 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /**
-     * Guarded by an explicit permission check, so the SuppressLint is safe:
-     * this runs only after a grant.
-     */
-    @SuppressLint("MissingPermission")
-    private fun enableMyLocationLayer() {
-        if (hasLocationPermission()) {
-            googleMap?.isMyLocationEnabled = true
-        }
-    }
-
     @SuppressLint("MissingPermission")
     private fun moveToCurrentLocationAndLoad() {
         if (!hasLocationPermission()) {
-            loadStationsAround(fallbackLocation)
+            loadStationsAround(6.9271, 79.8612)
             return
         }
 
-        // getCurrentLocation rather than lastLocation: a fresh emulator, or a
-        // phone that has not fixed recently, returns null for the cached value.
         fusedLocationClient.getCurrentLocation(
             Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            CancellationTokenSource().token
+            null
         ).addOnSuccessListener { location ->
             if (location == null) {
                 showMessage(getString(R.string.msg_location_unavailable))
-                loadStationsAround(fallbackLocation)
+                loadStationsAround(6.9271, 79.8612)
             } else {
-                val here = LatLng(location.latitude, location.longitude)
-                googleMap?.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(here, CITY_ZOOM)
-                )
-                loadStationsAround(here)
+                updateMapCenter(location.latitude, location.longitude)
+                loadStationsAround(location.latitude, location.longitude)
             }
         }.addOnFailureListener {
             showMessage(getString(R.string.msg_location_unavailable))
-            loadStationsAround(fallbackLocation)
+            loadStationsAround(6.9271, 79.8612)
         }
     }
 
-    private fun loadStationsAround(location: LatLng) {
-        lastQueriedLocation = location
-        viewModel.loadNearbyStations(location.latitude, location.longitude)
+    private fun loadStationsAround(lat: Double, lng: Double) {
+        lastQueriedLocationLat = lat
+        lastQueriedLocationLng = lng
+        updateMapCenter(lat, lng)
+        viewModel.loadNearbyStations(lat, lng)
+    }
+
+    private fun updateMapCenter(lat: Double, lng: Double) {
+        if (!mapLoaded) return
+        webView.evaluateJavascript("javascript:setCenter($lat, $lng, 12);", null)
     }
 
     // -- State rendering -----------------------------------------------------
@@ -261,51 +281,26 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun drawMarkers(stations: List<StationMapSummaryDto>) {
-        val map = googleMap ?: return
+        if (!mapLoaded) return
         clearMarkers()
 
         stations.forEach { station ->
-            // The repository has already discarded unusable coordinates, so a
-            // null here would be a programming error rather than bad data.
             val lat = station.latitude ?: return@forEach
             val lng = station.longitude ?: return@forEach
-
-            val marker = map.addMarker(
-                MarkerOptions()
-                    .position(LatLng(lat, lng))
-                    .title(station.name)
-                    .snippet(buildSnippet(station))
-                    .icon(
-                        BitmapDescriptorFactory.defaultMarker(
-                            if (station.isOpenNow == false) {
-                                BitmapDescriptorFactory.HUE_ORANGE
-                            } else {
-                                BitmapDescriptorFactory.HUE_GREEN
-                            }
-                        )
-                    )
+            
+            val nameEscaped = station.name.replace("'", "\\'")
+            val isActive = station.isOpenNow == true
+            
+            webView.evaluateJavascript(
+                "javascript:addMarker('${station.id}', $lat, $lng, '$nameEscaped', $isActive);", 
+                null
             )
-
-            if (marker != null) {
-                markerStationIds[marker] = station.id
-            }
         }
-    }
-
-    private fun buildSnippet(station: StationMapSummaryDto): String {
-        val parts = mutableListOf<String>()
-        station.distanceKm?.let {
-            parts += getString(R.string.fmt_marker_snippet, formatNumber(it))
-        }
-        station.availableBatterySlots?.let {
-            parts += resources.getQuantityString(R.plurals.slots_free, it, it)
-        }
-        return if (parts.isEmpty()) station.stationCode else parts.joinToString(SEPARATOR)
     }
 
     private fun clearMarkers() {
-        markerStationIds.keys.forEach { it.remove() }
-        markerStationIds.clear()
+        if (!mapLoaded) return
+        webView.evaluateJavascript("javascript:clearMarkers();", null)
     }
 
     private fun renderDetails(state: StationDetailUiState) {
@@ -318,9 +313,11 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 panel.detailsCard.visibility = View.VISIBLE
                 panel.detailLoading.visibility = View.VISIBLE
                 panel.detailName.text = ""
+                panel.detailStatusPill.visibility = View.GONE
                 panel.detailCode.visibility = View.GONE
                 panel.detailAddress.visibility = View.GONE
                 panel.detailDescription.visibility = View.GONE
+                panel.detailOperatingHours.visibility = View.GONE
                 panel.detailCapacity.visibility = View.GONE
                 panel.detailSlots.visibility = View.GONE
                 panel.detailPhone.visibility = View.GONE
@@ -336,9 +333,11 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 panel.detailsCard.visibility = View.VISIBLE
                 panel.detailLoading.visibility = View.GONE
                 panel.detailName.text = state.message
+                panel.detailStatusPill.visibility = View.GONE
                 panel.detailCode.visibility = View.GONE
                 panel.detailAddress.visibility = View.GONE
                 panel.detailDescription.visibility = View.GONE
+                panel.detailOperatingHours.visibility = View.GONE
                 panel.detailCapacity.visibility = View.GONE
                 panel.detailSlots.visibility = View.GONE
                 panel.detailPhone.visibility = View.GONE
@@ -350,22 +349,38 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         val panel = binding.detailsPanel
 
         panel.detailName.text = station.name
-
-        val openLabel = when (station.isOpenNow) {
-            true -> getString(R.string.label_open_now)
-            false -> getString(R.string.label_closed_now)
-            null -> null
+        
+        // Setup Active / Closed pill
+        if (station.isOpenNow == true) {
+            panel.detailStatusPill.visibility = View.VISIBLE
+            panel.detailStatusPill.text = "● Active"
+            panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_active)
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.solar_green_primary))
+        } else {
+            panel.detailStatusPill.visibility = View.VISIBLE
+            panel.detailStatusPill.text = "● Closed"
+            panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_review)
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.solar_amber))
         }
-        bindOptionalText(
-            panel.detailCode,
-            listOfNotNull(
-                getString(R.string.fmt_station_code, station.stationCode),
-                openLabel
-            ).joinToString(SEPARATOR)
-        )
 
+        bindOptionalText(panel.detailCode, getString(R.string.fmt_station_code, station.stationCode))
         bindOptionalText(panel.detailAddress, station.addressLine)
         bindOptionalText(panel.detailDescription, station.description)
+
+        // Find today's operating hours using standard Calendar (API 24 compatible)
+        val calendar = Calendar.getInstance()
+        val dayString = calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.getDefault())
+        val todaysSchedule = station.operationalSchedule?.find { it.dayOfWeek.equals(dayString, ignoreCase = true) }
+        
+        if (todaysSchedule != null) {
+            if (todaysSchedule.isClosed == true) {
+                bindOptionalText(panel.detailOperatingHours, getString(R.string.label_closed_now))
+            } else {
+                bindOptionalText(panel.detailOperatingHours, "${getString(R.string.label_operating_hours)}: ${todaysSchedule.openTime} - ${todaysSchedule.closeTime}")
+            }
+        } else {
+            panel.detailOperatingHours.visibility = View.GONE
+        }
 
         bindOptionalText(
             panel.detailCapacity,
@@ -416,7 +431,6 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         String.format(Locale.getDefault(), "%.1f", value)
 
     companion object {
-        private const val CITY_ZOOM = 12f
         private const val SEPARATOR = "  •  "
     }
 }
