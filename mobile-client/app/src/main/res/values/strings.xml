@@ -59,11 +59,24 @@
     <string name="cancel">Cancel</string>
     <string name="dismiss">Dismiss</string>
 
+    <!-- ===== Navigation Bar ===== -->
+    <string name="nav_home">Home</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_bookings">Bookings</string>
+    <string name="nav_qr">QR</string>
+    <string name="nav_profile">Profile</string>
+
     <!-- ===== Member 2: Nearby Solar Stations ===== -->
     <string name="title_nearby_stations">Nearby Solar Stations</string>
+    <string name="btn_nearby_solar_stations">View Nearby Solar Stations</string>
     <string name="action_retry">Retry</string>
     <string name="action_close">Close</string>
     <string name="action_open_nearby_stations">Open Nearby Solar Stations</string>
+
+    <string name="label_capacity">Capacity</string>
+    <string name="label_available_slots">Available Slots</string>
+    <string name="label_operating_hours">Operating Hours</string>
+    <string name="action_book_slot">Book Slot</string>
 
     <string name="msg_no_stations">No active solar stations were found within %1$s km of your location.</string>
     <string name="msg_permission_denied">Location permission is needed to find stations near you. Showing the default area instead.</string>

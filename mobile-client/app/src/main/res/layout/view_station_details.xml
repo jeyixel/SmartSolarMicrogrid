@@ -8,86 +8,212 @@
     android:layout_height="wrap_content"
     android:layout_margin="12dp"
     android:visibility="gone"
-    app:cardCornerRadius="16dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="20dp"
     app:cardElevation="10dp"
+    app:strokeColor="@color/card_border"
+    app:strokeWidth="1dp"
     tools:visibility="visible">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <TextView
-            android:id="@+id/detailName"
+        <!-- Header: Name & Status Pill -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/detailStatusPill">
+
+                <TextView
+                    android:id="@+id/detailName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    tools:text="Tangalle Solar Hub" />
+
+                <TextView
+                    android:id="@+id/detailCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="SGH-TAN-001" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/detailStatusPill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_pill_active"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textColor="@color/pill_active_text"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="● Active" />
+        </RelativeLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/card_border" />
+
+        <!-- Info Grid -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="19sp"
-            android:textStyle="bold"
-            tools:text="Colombo Central Microgrid" />
+            android:orientation="horizontal"
+            android:baselineAligned="false">
 
-        <TextView
-            android:id="@+id/detailCode"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_capacity"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/detailCapacity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="500 kWh" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_available_slots"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/detailSlots"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="4 / 10" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Address & Hours & Contact -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textSize="13sp"
-            tools:text="STN-001" />
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
 
-        <TextView
-            android:id="@+id/detailAddress"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="14sp"
-            tools:text="45 Galle Road, Colombo 03" />
+            <TextView
+                android:id="@+id/detailOperatingHours"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                app:drawableStartCompat="@android:drawable/ic_menu_recent_history"
+                android:drawablePadding="8dp"
+                app:drawableTint="@color/solar_green_primary"
+                tools:text="Operating Hours: 08:00 - 18:00" />
 
+            <TextView
+                android:id="@+id/detailAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                app:drawableStartCompat="@android:drawable/ic_dialog_map"
+                android:drawablePadding="8dp"
+                app:drawableTint="@color/solar_green_primary"
+                tools:text="45 Galle Road, Colombo" />
+
+            <TextView
+                android:id="@+id/detailPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                app:drawableStartCompat="@android:drawable/ic_menu_call"
+                android:drawablePadding="8dp"
+                app:drawableTint="@color/solar_green_primary"
+                tools:text="011 234 5678" />
+        </LinearLayout>
+
+        <!-- Description -->
         <TextView
             android:id="@+id/detailDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="14sp"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
             tools:text="Rooftop solar array with battery swap bay." />
-
-        <TextView
-            android:id="@+id/detailCapacity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:textSize="14sp"
-            tools:text="Capacity: 250.0 kWh" />
-
-        <TextView
-            android:id="@+id/detailSlots"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            tools:text="Battery slots: 4 of 10 available" />
-
-        <TextView
-            android:id="@+id/detailPhone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textSize="14sp"
-            tools:text="Contact: 011 234 5678" />
 
         <ProgressBar
             android:id="@+id/detailLoading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:visibility="gone" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/detailCloseButton"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
+        <!-- Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="@string/action_close" />
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="20dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/detailCloseButton"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/action_close"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Member 3 Placeholder -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/detailBookButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/action_book_slot"
+                android:backgroundTint="@color/solar_green_primary"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
