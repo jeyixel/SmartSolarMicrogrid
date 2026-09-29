@@ -2,6 +2,7 @@ package com.example.smartsolarmicrogrid.ui.dashboard
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +10,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.smartsolarmicrogrid.R
 import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
+import com.example.smartsolarmicrogrid.data.local.TokenManager
+import com.example.smartsolarmicrogrid.data.repository.StationRepository
 import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
+import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
+import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import java.util.concurrent.Executors
 
@@ -19,10 +26,17 @@ import java.util.concurrent.Executors
 class ProsumerDashboardActivity : AppCompatActivity() {
 
     private lateinit var tvWelcomeUser: TextView
-    private lateinit var tvUserNic: TextView
     private lateinit var tvUserRoleStatus: TextView
-    private lateinit var btnManageProfile: MaterialButton
-    private lateinit var btnLogout: MaterialButton
+    private lateinit var bottomNav: BottomNavigationView
+    
+    // Live Preview Fields
+    private lateinit var cardPreviewStation: View
+    private lateinit var tvPreviewStationName: TextView
+    private lateinit var tvPreviewStationStatus: TextView
+    private lateinit var tvPreviewStationDetails: TextView
+    
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var stationRepository: StationRepository
 
     private lateinit var authSessionDao: AuthSessionDao
     private val executor = Executors.newSingleThreadExecutor()
@@ -47,15 +61,19 @@ class ProsumerDashboardActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        bottomNav.selectedItemId = R.id.nav_home
         loadSessionData()
     }
 
     private fun initViews() {
         tvWelcomeUser = findViewById(R.id.tvWelcomeUser)
-        tvUserNic = findViewById(R.id.tvUserNic)
         tvUserRoleStatus = findViewById(R.id.tvUserRoleStatus)
-        btnManageProfile = findViewById(R.id.btnManageProfile)
-        btnLogout = findViewById(R.id.btnLogout)
+        bottomNav = findViewById(R.id.bottomNavigation)
+        
+        // Quick Actions logic mapping (Member 2 map logic)
+        findViewById<View>(R.id.btnQuickNearby)?.setOnClickListener {
+            startActivity(Intent(this, NearbyStationsActivity::class.java))
+        }
     }
 
     private fun loadSessionData() {
@@ -64,29 +82,40 @@ class ProsumerDashboardActivity : AppCompatActivity() {
             runOnUiThread {
                 if (session != null) {
                     val displayName = session.fullName ?: "Prosumer"
-                    tvWelcomeUser.text = "Welcome, $displayName"
-                    tvUserNic.text = "NIC: ${session.nic}"
-                    tvUserRoleStatus.text = "Role: ${session.role} | Status: ${session.accountStatus ?: "Active"}"
+                    tvWelcomeUser.text = displayName
+                    tvUserRoleStatus.text = "Solar ${session.role} • Microgrid Node #04"
                 }
             }
         }
     }
 
     private fun setupListeners() {
-        btnManageProfile.setOnClickListener {
-            val intent = Intent(this, com.example.smartsolarmicrogrid.ui.profile.ProfileActivity::class.java)
-            startActivity(intent)
+        bottomNav.selectedItemId = R.id.nav_home
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> true
+                R.id.nav_map -> {
+                    startActivity(Intent(this, NearbyStationsActivity::class.java))
+                    true
+                }
+                R.id.nav_profile -> {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                    true
+                }
+                else -> false
+            }
         }
-
-        btnLogout.setOnClickListener {
-            performLogout()
+        
+        // Wire up buttons from the new UI layout
+        findViewById<android.view.View>(R.id.btnQuickNearby).setOnClickListener {
+            startActivity(Intent(this, NearbyStationsActivity::class.java))
         }
     }
 
     private fun performLogout() {
         executor.execute {
             authSessionDao.deleteSession()
-            com.example.smartsolarmicrogrid.data.local.TokenManager(this).clearToken()
+            TokenManager(this).clearToken()
             runOnUiThread {
                 val intent = Intent(this, LoginActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
