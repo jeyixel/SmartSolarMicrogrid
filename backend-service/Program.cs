@@ -1,15 +1,16 @@
 /*
- * Student Name: Waru Randima
- * IT Number: IT23163690
- * Component: User Identity and Account Management
- * File Purpose: Configures services and the HTTP request pipeline
- * Last Modified: 2026-09-22
+ * Component: Application composition root.
+ * Combines Member 1 (User Identity and Account Management),
+ * Member 2 (Microgrid Node and Location Services), and
+ * Member 3 (Energy Booking and Reservation Services).
  */
 
 using System.Text;
+using backend_service.Abstractions;
 using backend_service.Data;
-using backend_service.Middleware;
+using backend_service.Infrastructure;
 using backend_service.Models;
+using backend_service.Repositories;
 using backend_service.Services;
 using backend_service.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,22 +19,142 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using MongoDbSettings = backend_service.Settings.MongoDbSettings;
+using StationMongoDbSettings = backend_service.Configuration.MongoDbSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure MongoDB conventions: ignore extra elements across all documents globally
+// Configure MongoDB conventions once for all document models. This lets modules
+// evolve independently without older documents failing deserialization.
 var conventionPack = new ConventionPack
 {
     new IgnoreExtraElementsConvention(true)
 };
-ConventionRegistry.Register("GlobalConventions", conventionPack, type => true);
+ConventionRegistry.Register("GlobalConventions", conventionPack, _ => true);
 
-// Add services to the container.
-builder.Services.AddControllers();
+// MongoDB
+//
+// Two settings classes are bound deliberately: Member 1's users module reads the
+// "MongoDbSettings" section, while Member 2's station module reads "MongoDb"
+// plus ConnectionStrings:MongoDb. Both modules share the same IMongoClient and
+// IMongoDatabase registration below.
+builder.Services.Configure<MongoDbSettings>(
+    builder.Configuration.GetSection("MongoDbSettings"));
+
+builder.Services.Configure<StationMongoDbSettings>(
+    builder.Configuration.GetSection(StationMongoDbSettings.SectionName));
+
+builder.Services.PostConfigure<StationMongoDbSettings>(settings =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("MongoDb");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        connectionString = builder.Configuration["MongoDbSettings:ConnectionString"];
+    }
+
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        settings.ConnectionString = connectionString;
+    }
+});
+
+builder.Services.PostConfigure<MongoDbSettings>(settings =>
+{
+    if (string.IsNullOrWhiteSpace(settings.ConnectionString))
+    {
+        settings.ConnectionString =
+            builder.Configuration.GetConnectionString("MongoDb") ?? string.Empty;
+    }
+});
+
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    var connectionString = settings.ConnectionString;
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        connectionString = sp.GetRequiredService<IOptions<StationMongoDbSettings>>()
+            .Value.ConnectionString;
+    }
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException(
+            "No MongoDB connection string was configured. Set ConnectionStrings:MongoDb " +
+            "or MongoDbSettings:ConnectionString in appsettings.Development.json locally, " +
+            "or in the site configuration under IIS.");
+    }
+
+    return new MongoClient(connectionString);
+});
+
+builder.Services.AddSingleton<IMongoDatabase>(sp =>
+{
+    var client = sp.GetRequiredService<IMongoClient>();
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    if (string.IsNullOrWhiteSpace(settings.DatabaseName))
+    {
+        throw new InvalidOperationException("MongoDB DatabaseName is not configured.");
+    }
+
+    return client.GetDatabase(settings.DatabaseName);
+});
+
+builder.Services.AddHostedService<MongoIndexInitializer>();
+
+// Module services
+
+// Member 1: identity and account management.
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<BootstrapAdminSettings>(
+    builder.Configuration.GetSection("BootstrapAdmin"));
+
+builder.Services.AddScoped<IPasswordService, PasswordService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<DevelopmentAdminSeeder>();
+
+// Member 2: microgrid nodes.
+builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddSingleton<IScheduleEvaluator, ScheduleEvaluator>();
+
+// Member 3: energy booking and reservations.
+builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
+builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
+builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
+builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
+builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
+
+// Member 3 owns the real implementation. Until it is registered, a stub reports
+// no reservations so this module can be built and demonstrated on its own. It is
+// refused outside Development, because an unguarded deactivation in production
+// would silently break the rule it exists to enforce.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IReservationAvailabilityService, StubReservationAvailabilityService>();
+}
+
+// MVC
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition =
+            System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
+
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = ValidationProblemFactory.Create;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    // Configure Swagger document metadata and JWT security scheme
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Smart Solar Microgrid API",
@@ -52,7 +173,6 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityRequirement(document =>
     {
-        // Add global Bearer security requirement
         return new OpenApiSecurityRequirement
         {
             {
@@ -63,73 +183,24 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Bind MongoDB configuration settings
-builder.Services.Configure<MongoDbSettings>(
-    builder.Configuration.GetSection("MongoDbSettings"));
-
-// Bind JWT configuration settings
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
-
-// Bind Bootstrap Admin configuration settings
-var adminSection = builder.Configuration.GetSection("BootstrapAdmin");
-if (!adminSection.Exists() || !adminSection.GetChildren().Any())
-{
-    adminSection = builder.Configuration.GetSection("BootstrapAdminSettings");
-}
-builder.Services.Configure<BootstrapAdminSettings>(adminSection);
-
-// Register application services
-builder.Services.AddScoped<IPasswordService, PasswordService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<DevelopmentAdminSeeder>();
-
-// Register MongoDB client as a singleton
-builder.Services.AddSingleton<IMongoClient>(sp =>
-{
-    // Resolve MongoDB settings and instantiate a singleton MongoClient
-    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-    if (string.IsNullOrWhiteSpace(settings.ConnectionString))
-    {
-        throw new InvalidOperationException("MongoDB ConnectionString is not configured.");
-    }
-
-    return new MongoClient(settings.ConnectionString);
-});
-
-// Register MongoDB database as a singleton
-builder.Services.AddSingleton<IMongoDatabase>(sp =>
-{
-    // Resolve MongoClient and settings to select and return the configured database
-    var client = sp.GetRequiredService<IMongoClient>();
-    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-    if (string.IsNullOrWhiteSpace(settings.DatabaseName))
-    {
-        throw new InvalidOperationException("MongoDB DatabaseName is not configured.");
-    }
-
-    return client.GetDatabase(settings.DatabaseName);
-});
-
-// Configure JWT Bearer Authentication
+// Authentication and authorization.
 var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"] ?? string.Empty;
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"] ?? string.Empty;
 var jwtAudience = builder.Configuration["JwtSettings:Audience"] ?? string.Empty;
 
 builder.Services.AddAuthentication(options =>
 {
-    // Configure default authentication scheme to JWT Bearer
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    // Configure token validation parameters for incoming JWTs
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = !string.IsNullOrWhiteSpace(jwtSecretKey) ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)) : null,
+        IssuerSigningKey = !string.IsNullOrWhiteSpace(jwtSecretKey)
+            ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+            : null,
         ValidateIssuer = true,
         ValidIssuer = jwtIssuer,
         ValidateAudience = true,
@@ -139,108 +210,86 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure Role-Based Authorization Policies
 builder.Services.AddAuthorization(options =>
 {
-    // Define named authorization policies matching system role matrix
     options.AddPolicy("RequireBackofficeRole", policy =>
     {
-        // Require Backoffice role for administrative and user management operations
         policy.RequireRole(UserRole.Backoffice.ToString());
     });
 
     options.AddPolicy("RequireGridOperatorRole", policy =>
     {
-        // Require GridOperator role for operational and grid management operations
         policy.RequireRole(UserRole.GridOperator.ToString());
     });
 
     options.AddPolicy("RequireProsumerRole", policy =>
     {
-        // Require Prosumer role for self-service account and energy operations
         policy.RequireRole(UserRole.Prosumer.ToString());
     });
 });
 
-// Configure CORS policy for frontend client
-const string CorsPolicyName = "FrontendDevelopment";
+// CORS
+const string WebClientCorsPolicy = "WebClient";
 builder.Services.AddCors(options =>
 {
-    // Define development CORS policy
-    options.AddPolicy(name: CorsPolicyName, policy =>
+    options.AddPolicy(WebClientCorsPolicy, policy =>
     {
-        // Configure the permitted frontend origin, headers, and HTTP methods.
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
 
 // Setup MongoDB
-var mongoConnString = builder.Configuration.GetConnectionString("MongoDb")
-    ?? builder.Configuration["MongoDbSettings:ConnectionString"]
-    ?? "mongodb://localhost:27017";
-var defaultDatabaseName = builder.Configuration["ConnectionStrings:DatabaseName"]
-    ?? builder.Configuration["MongoDbSettings:DatabaseName"]
-    ?? "SmartSolarMicrogridDB";
-var mongoClient = new MongoClient(mongoConnString);
-var mongoDatabase = mongoClient.GetDatabase(defaultDatabaseName);
-builder.Services.AddSingleton(mongoDatabase);
+// var mongoConnString = builder.Configuration.GetConnectionString("MongoDb")
+//     ?? builder.Configuration["MongoDbSettings:ConnectionString"]
+//     ?? "mongodb://localhost:27017";
+// var defaultDatabaseName = builder.Configuration["ConnectionStrings:DatabaseName"]
+//     ?? builder.Configuration["MongoDbSettings:DatabaseName"]
+//     ?? "SmartSolarMicrogridDB";
+// var mongoClient = new MongoClient(mongoConnString);
+// var mongoDatabase = mongoClient.GetDatabase(defaultDatabaseName);
+// builder.Services.AddSingleton(mongoDatabase);
 
-// ─── Reservation Domain DI (Member 3) ─────────────────────────────────────────
-// Repositories
-builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
-builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
-builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
+        if (allowedOrigins.Length == 0)
+        {
+            allowedOrigins = new[] { "http://localhost:3000", "http://localhost:5173" };
+        }
 
-// Services (FAT pattern — all business logic lives here)
-builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
-builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
-// ──────────────────────────────────────────────────────────────────────────────
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
 
-// Global exception handling middleware
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+// First, so it can catch anything thrown further down.
+app.UseMiddleware<backend_service.Middleware.ExceptionHandlingMiddleware>();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        // Configure Swagger UI endpoint and title
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Solar Microgrid API v1");
     });
 
-    // Seed initial development administrator account
     using (var scope = app.Services.CreateScope())
     {
         var seeder = scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>();
         await seeder.SeedAsync();
     }
 }
-
-app.UseRouting();
-
-app.UseCors("AllowAll");
-
-if (!app.Environment.IsDevelopment())
+else
 {
     app.UseHttpsRedirection();
 }
 
+app.UseRouting();
+
+app.UseCors(WebClientCorsPolicy);
+
 app.UseAuthentication();
 
 app.UseAuthorization();
+
 app.MapControllers();
 
 await app.RunAsync();

@@ -39,8 +39,8 @@ public class SolarStationController : ControllerBase
             CapacityKWh = 250.5,
             TotalBatterySlots = 20,
             AvailableBatterySlots = 3,
-            Status = "Active",
-            OperationalSchedule = new List<OperationalScheduleBlock>()
+            Status = StationStatus.Active,
+            OperationalSchedule = new List<OperationalScheduleEntry>()
         },
         new SolarStationInfo
         {
@@ -49,8 +49,8 @@ public class SolarStationController : ControllerBase
             CapacityKWh = 180.0,
             TotalBatterySlots = 15,
             AvailableBatterySlots = 8,
-            Status = "Active",
-            OperationalSchedule = new List<OperationalScheduleBlock>()
+            Status = StationStatus.Active,
+            OperationalSchedule = new List<OperationalScheduleEntry>()
         },
         new SolarStationInfo
         {
@@ -59,8 +59,8 @@ public class SolarStationController : ControllerBase
             CapacityKWh = 120.0,
             TotalBatterySlots = 10,
             AvailableBatterySlots = 10,
-            Status = "Active",
-            OperationalSchedule = new List<OperationalScheduleBlock>()
+            Status = StationStatus.Active,
+            OperationalSchedule = new List<OperationalScheduleEntry>()
         },
         new SolarStationInfo
         {
@@ -69,8 +69,8 @@ public class SolarStationController : ControllerBase
             CapacityKWh = 95.0,
             TotalBatterySlots = 8,
             AvailableBatterySlots = 2,
-            Status = "Active",
-            OperationalSchedule = new List<OperationalScheduleBlock>()
+            Status = StationStatus.Active,
+            OperationalSchedule = new List<OperationalScheduleEntry>()
         }
     };
 
@@ -150,14 +150,14 @@ public class SolarStationController : ControllerBase
     [HttpPost("{stationCode}/schedule")]
     public async Task<ActionResult<SolarStationInfo>> AddScheduleBlock(
         string stationCode,
-        [FromBody] OperationalScheduleBlock block,
+        [FromBody] OperationalScheduleEntry block,
         [FromHeader(Name = "X-User-Id")] string? userId = null)
     {
-        if (DateTime.TryParse(block.StartTime, out var start) &&
-            DateTime.TryParse(block.EndTime, out var end) &&
-            end <= start)
+        if (TimeSpan.TryParse(block.OpenTime, out var openTime) &&
+            TimeSpan.TryParse(block.CloseTime, out var closeTime) &&
+            closeTime <= openTime)
         {
-            return BadRequest(new { error = "Schedule block EndTime must be after StartTime." });
+            return BadRequest(new { error = "Schedule block CloseTime must be after OpenTime." });
         }
 
         var station = await _stationRepo.GetByStationCodeAsync(stationCode);
