@@ -16,6 +16,9 @@
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- added for remote server connection -->
+        <domain includeSubdomains="true">192.168.8.198</domain>
+        <domain includeSubdomains="true">192.168.8.101</domain>
     </domain-config>
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>

@@ -1,5 +1,6 @@
 using backend_service.Models;
 using MongoDB.Driver;
+using MongoDB.Bson;
 
 namespace backend_service.Data;
 
@@ -29,4 +30,34 @@ public class EnergyBookingSlotRepository : IEnergyBookingSlotRepository
 
     public async Task DeleteAsync(string id) =>
         await _slots.DeleteOneAsync(x => x.Id == id);
+
+    public async Task<bool> IncrementBookedSlotsAtomicAsync(string slotId, int count)
+    {
+        var filter = Builders<EnergyBookingSlot>.Filter.And(
+            Builders<EnergyBookingSlot>.Filter.Eq(x => x.Id, slotId),
+            (FilterDefinition<EnergyBookingSlot>)new BsonDocument("$expr", 
+                new BsonDocument("$lt", new BsonArray { "$BookedBatterySlots", "$TotalBatterySlots" })
+            )
+        );
+
+        var update = Builders<EnergyBookingSlot>.Update
+            .Inc(x => x.BookedBatterySlots, count)
+            .Set(x => x.UpdatedAtUtc, DateTime.UtcNow);
+
+        // findOneAndUpdate equivalent
+        var result = await _slots.FindOneAndUpdateAsync(filter, update);
+
+        // If result is null, it means no document matched the filter (either doesn't exist, or capacity is full)
+        return result != null;
+    }
+
+    public async Task DecrementBookedSlotsAsync(string slotId, int count)
+    {
+        var filter = Builders<EnergyBookingSlot>.Filter.Eq(x => x.Id, slotId);
+        var update = Builders<EnergyBookingSlot>.Update
+            .Inc(x => x.BookedBatterySlots, -count)
+            .Set(x => x.UpdatedAtUtc, DateTime.UtcNow);
+
+        await _slots.UpdateOneAsync(filter, update);
+    }
 }

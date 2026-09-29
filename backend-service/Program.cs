@@ -124,7 +124,6 @@ builder.Services.AddSingleton<IScheduleEvaluator, ScheduleEvaluator>();
 // Member 3: energy booking and reservations.
 builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
 builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
-builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
 builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
 builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
 
@@ -237,6 +236,17 @@ builder.Services.AddCors(options =>
         var allowedOrigins = builder.Configuration
             .GetSection("Cors:AllowedOrigins")
             .Get<string[]>() ?? Array.Empty<string>();
+
+// Setup MongoDB
+// var mongoConnString = builder.Configuration.GetConnectionString("MongoDb")
+//     ?? builder.Configuration["MongoDbSettings:ConnectionString"]
+//     ?? "mongodb://localhost:27017";
+// var defaultDatabaseName = builder.Configuration["ConnectionStrings:DatabaseName"]
+//     ?? builder.Configuration["MongoDbSettings:DatabaseName"]
+//     ?? "SmartSolarMicrogridDB";
+// var mongoClient = new MongoClient(mongoConnString);
+// var mongoDatabase = mongoClient.GetDatabase(defaultDatabaseName);
+// builder.Services.AddSingleton(mongoDatabase);
 
         if (allowedOrigins.Length == 0)
         {

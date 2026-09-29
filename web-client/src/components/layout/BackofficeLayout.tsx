@@ -47,9 +47,14 @@ export default function BackofficeLayout() {
       icon: <UserCheck className="h-5 w-5" />,
     },
     {
-      to: '/backoffice/users/deactivation-requests',
-      label: 'Deactivation Requests',
-      icon: <UserX className="h-5 w-5" />,
+      to: '/stations',
+      label: 'Solar Stations',
+      icon: <Sun className="h-5 w-5" />,
+    },
+    {
+      to: '/backoffice/reservations',
+      label: 'All Reservations',
+      icon: <ShieldCheck className="h-5 w-5" />,
     },
   ];
 

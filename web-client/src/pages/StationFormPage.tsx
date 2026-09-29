@@ -567,6 +567,7 @@ export function StationFormPage() {
         <CardContent className="space-y-3">
           <ScheduleEditor
             value={form.operationalSchedule}
+            disabled={!canEditFullDetails}
             onChange={(next) => set('operationalSchedule', next)}
           />
           {localErrors.operationalSchedule && (
