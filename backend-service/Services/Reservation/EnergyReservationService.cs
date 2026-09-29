@@ -252,11 +252,11 @@ public class EnergyReservationService : IEnergyReservationService
 
             // Fetch linked physical slot details for enriched telemetry
             var slot = await _slotRepo.GetByIdAsync(res.SlotId);
-            var slotStart = slot?.StartTime ?? res.CreatedAt;
-            var slotEnd = slot?.EndTime ?? res.CreatedAt.AddHours(1);
-            var stationId = slot?.StationId ?? "N/A";
-            var actionType = slot?.ActionType ?? "Drop-off";
-            var energyAmount = slot?.EnergyAmountKWh ?? 0;
+            var slotStart = res.SlotStartTime != default ? res.SlotStartTime : (slot?.StartTime ?? res.ReservationCreatedAtUtc);
+            var slotEnd = res.SlotEndTime != default ? res.SlotEndTime : (slot?.EndTime ?? res.ReservationCreatedAtUtc.AddHours(1));
+            var stationId = !string.IsNullOrWhiteSpace(res.StationId) ? res.StationId : (slot?.StationId ?? "N/A");
+            var actionType = slot?.TradeType ?? "Charging";
+            var energyAmount = res.RequestedKWh > 0 ? res.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
 
             // Apply date range filters
             if (fromDate.HasValue && slotStart < fromDate.Value)
@@ -273,6 +273,7 @@ public class EnergyReservationService : IEnergyReservationService
             {
                 var query = search.Trim();
                 bool matches = res.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               (!string.IsNullOrEmpty(res.ReservationCode) && res.ReservationCode.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                stationId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                actionType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                res.Status.Contains(query, StringComparison.OrdinalIgnoreCase);
@@ -294,8 +295,8 @@ public class EnergyReservationService : IEnergyReservationService
                 EnergyAmountKWh = energyAmount,
                 ActionType = actionType,
                 Status = res.Status,
-                CreatedAt = res.CreatedAt,
-                UpdatedAt = res.UpdatedAt
+                CreatedAt = res.ReservationCreatedAtUtc,
+                UpdatedAt = res.LastModifiedAtUtc
             });
         }
 
