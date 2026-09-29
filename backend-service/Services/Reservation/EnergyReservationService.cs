@@ -223,4 +223,83 @@ public class EnergyReservationService : IEnergyReservationService
             TotalBookingsCount = reservations.Count
         };
     }
+
+    /// <summary>
+    /// Retrieves prosumer booking history with optional status, date range, and text filtering.
+    /// Joins each reservation with physical slot time windows, action type, and capacity details.
+    /// </summary>
+    public async Task<List<ReservationHistoryDto>> GetHistoryAsync(
+        string nic,
+        string? status = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        string? search = null)
+    {
+        // Query all reservations for this prosumer NIC
+        var reservations = await _reservationRepo.GetByProsumerNicAsync(nic);
+        var result = new List<ReservationHistoryDto>();
+
+        foreach (var res in reservations)
+        {
+            // Apply status filter if specified
+            if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(res.Status, status, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+            }
+
+            // Fetch linked physical slot details for enriched telemetry
+            var slot = await _slotRepo.GetByIdAsync(res.SlotId);
+            var slotStart = slot?.StartTime ?? res.CreatedAt;
+            var slotEnd = slot?.EndTime ?? res.CreatedAt.AddHours(1);
+            var stationId = slot?.StationId ?? "N/A";
+            var actionType = slot?.ActionType ?? "Drop-off";
+            var energyAmount = slot?.EnergyAmountKWh ?? 0;
+
+            // Apply date range filters
+            if (fromDate.HasValue && slotStart < fromDate.Value)
+            {
+                continue;
+            }
+            if (toDate.HasValue && slotStart > toDate.Value)
+            {
+                continue;
+            }
+
+            // Apply text search across reservation attributes
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var query = search.Trim();
+                bool matches = res.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               stationId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               actionType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               res.Status.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+                if (!matches)
+                {
+                    continue;
+                }
+            }
+
+            result.Add(new ReservationHistoryDto
+            {
+                Id = res.Id,
+                ProsumerNIC = res.ProsumerNIC,
+                SlotId = res.SlotId,
+                StationId = stationId,
+                StartTime = slotStart,
+                EndTime = slotEnd,
+                EnergyAmountKWh = energyAmount,
+                ActionType = actionType,
+                Status = res.Status,
+                CreatedAt = res.CreatedAt,
+                UpdatedAt = res.UpdatedAt
+            });
+        }
+
+        // Return ordered by newest start time first
+        return result.OrderByDescending(x => x.StartTime).ToList();
+    }
 }

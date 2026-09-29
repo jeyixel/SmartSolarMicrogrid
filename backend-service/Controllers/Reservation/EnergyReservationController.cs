@@ -158,4 +158,26 @@ public class EnergyReservationController : ControllerBase
         var stats = await _reservationService.GetDashboardStatsAsync(nic);
         return Ok(stats);
     }
+
+    /// <summary>
+    /// Retrieves prosumer booking history with optional filtering by status, date range, and search text.
+    /// </summary>
+    [HttpGet("history/{nic}")]
+    public async Task<ActionResult<List<ReservationHistoryDto>>> GetBookingHistory(
+        string nic,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] string? search = null)
+    {
+        // Validate incoming prosumer NIC parameter
+        if (string.IsNullOrWhiteSpace(nic))
+        {
+            return BadRequest(new { error = "Prosumer NIC parameter cannot be null or empty." });
+        }
+
+        // Delegate query execution and filtering to the reservation service
+        var history = await _reservationService.GetHistoryAsync(nic, status, fromDate, toDate, search);
+        return Ok(history);
+    }
 }

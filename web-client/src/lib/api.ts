@@ -264,3 +264,46 @@ export const fetchDashboardStats = async (nic: string): Promise<DashboardStats> 
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Booking History & Filtering (/api/reservations/history/{nic})
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ReservationHistoryItem {
+  id: string;
+  prosumerNIC: string;
+  slotId: string;
+  stationId: string;
+  startTime: string;
+  endTime: string;
+  energyAmountKWh: number;
+  actionType: 'Drop-off' | 'Charge';
+  status: 'Pending' | 'Approved' | 'Completed' | 'Cancelled';
+  qrToken?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HistoryFilterParams {
+  status?: string;
+  fromDate?: string;
+  toDate?: string;
+  search?: string;
+}
+
+export const fetchBookingHistory = async (
+  nic: string,
+  filters: HistoryFilterParams = {}
+): Promise<ReservationHistoryItem[]> => {
+  const query = new URLSearchParams();
+  if (filters.status && filters.status !== 'All') query.set('status', filters.status);
+  if (filters.fromDate) query.set('fromDate', filters.fromDate);
+  if (filters.toDate) query.set('toDate', filters.toDate);
+  if (filters.search) query.set('search', filters.search);
+
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return handleResponse<ReservationHistoryItem[]>(
+    await fetch(`${API_BASE_URL}/reservations/history/${encodeURIComponent(nic)}${queryString}`)
+  );
+};
+
+

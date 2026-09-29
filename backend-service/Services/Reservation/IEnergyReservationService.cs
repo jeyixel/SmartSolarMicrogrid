@@ -11,4 +11,5 @@ public interface IEnergyReservationService
     Task UpdateReservationAsync(string id, EnergyReservation updatedReservation, string updatedByUserId);
     Task CancelReservationAsync(string id, string cancelledByUserId);
     Task<DashboardStatsDto> GetDashboardStatsAsync(string nic);
+    Task<List<ReservationHistoryDto>> GetHistoryAsync(string nic, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, string? search = null);
 }
