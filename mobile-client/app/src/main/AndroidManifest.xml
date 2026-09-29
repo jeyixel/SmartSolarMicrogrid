@@ -63,6 +63,11 @@
             android:exported="false"
             android:label="@string/title_nearby_stations" />
 
+        <!-- Member 4: booking history & telemetry. -->
+        <activity
+            android:name=".ui.booking.BookingHistoryActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>
