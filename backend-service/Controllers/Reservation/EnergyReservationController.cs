@@ -1,3 +1,4 @@
+using backend_service.DTOs;
 using backend_service.Models;
 using backend_service.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -139,5 +140,22 @@ public class EnergyReservationController : ControllerBase
         {
             return BadRequest(new { error = ex.Message, rule = "12HourRule" });
         }
+    }
+
+    /// <summary>
+    /// Returns live dashboard statistics (pending count, upcoming approved count, total bookings) for a prosumer by NIC.
+    /// </summary>
+    [HttpGet("dashboard/{nic}")]
+    public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats(string nic)
+    {
+        // Validate incoming prosumer NIC parameter
+        if (string.IsNullOrWhiteSpace(nic))
+        {
+            return BadRequest(new { error = "Prosumer NIC parameter cannot be null or empty." });
+        }
+
+        // Delegate statistics aggregation to the reservation service
+        var stats = await _reservationService.GetDashboardStatsAsync(nic);
+        return Ok(stats);
     }
 }

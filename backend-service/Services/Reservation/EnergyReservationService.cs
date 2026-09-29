@@ -1,4 +1,5 @@
 using backend_service.Data;
+using backend_service.DTOs;
 using backend_service.Models;
 
 namespace backend_service.Services;
@@ -144,5 +145,47 @@ public class EnergyReservationService : IEnergyReservationService
         slot.Status = "Available";
         slot.UpdatedAt = DateTime.UtcNow;
         await _slotRepo.UpdateAsync(slot.Id, slot);
+    }
+
+    /// <summary>
+    /// Computes dashboard statistics for a specific prosumer identified by NIC.
+    /// Aggregates pending reservation counts and upcoming approved/future reservations.
+    /// </summary>
+    public async Task<DashboardStatsDto> GetDashboardStatsAsync(string nic)
+    {
+        // Query all reservations linked to this prosumer's NIC
+        var reservations = await _reservationRepo.GetByProsumerNicAsync(nic);
+
+        int pendingCount = 0;
+        int upcomingApprovedCount = 0;
+        var now = DateTime.UtcNow;
+
+        // Iterate through reservations to compute status and time-based metrics
+        foreach (var reservation in reservations)
+        {
+            if (string.Equals(reservation.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                pendingCount++;
+            }
+
+            // Count approved/confirmed reservations whose booking slot starts in the future
+            if (string.Equals(reservation.Status, "Approved", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(reservation.Status, "Confirmed", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(reservation.Status, "Booked", StringComparison.OrdinalIgnoreCase))
+            {
+                var slot = await _slotRepo.GetByIdAsync(reservation.SlotId);
+                if (slot != null && slot.StartTime > now)
+                {
+                    upcomingApprovedCount++;
+                }
+            }
+        }
+
+        return new DashboardStatsDto
+        {
+            PendingCount = pendingCount,
+            UpcomingApprovedCount = upcomingApprovedCount,
+            TotalBookingsCount = reservations.Count
+        };
     }
 }
