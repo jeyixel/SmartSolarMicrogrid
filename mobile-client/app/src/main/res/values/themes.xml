@@ -1,9 +1,19 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.SmartSolarMicrogrid" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Solar Green Color Palette -->
+        <item name="colorPrimary">@color/solar_green_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/solar_green_light</item>
+        <item name="colorOnPrimaryContainer">@color/solar_green_dark</item>
+        <item name="colorSecondary">@color/solar_green_secondary</item>
+        <item name="colorTertiary">@color/solar_teal</item>
+        <item name="android:colorBackground">@color/solar_bg_light</item>
     </style>
 
     <style name="Theme.SmartSolarMicrogrid" parent="Base.Theme.SmartSolarMicrogrid" />
+
+    <style name="ShapeAppearanceOverlay.App.CornerSize50Percent" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

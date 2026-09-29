@@ -2,4 +2,21 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Solar Microgrid Green Palette -->
+    <color name="solar_green_primary">#0B3B24</color>
+    <color name="solar_green_secondary">#144D34</color>
+    <color name="solar_green_light">#A5D6A7</color>
+    <color name="solar_green_dark">#003300</color>
+    <color name="solar_teal">#00796B</color>
+    <color name="solar_amber">#F57F17</color>
+    <color name="solar_bg_light">#F7F9F7</color>
+    <color name="card_border">#E0E5E0</color>
+    <color name="text_primary">#1A1C1A</color>
+    <color name="text_secondary">#5C635A</color>
+    <color name="pill_active_bg">#C8E6C9</color>
+    <color name="pill_active_text">#2E7D32</color>
+    <color name="pill_review_bg">#FFECB3</color>
+    <color name="pill_review_text">#F57F17</color>
+    <color name="map_placeholder_bg">#B2DFDB</color>
 </resources>
