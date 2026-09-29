@@ -249,3 +249,20 @@ export const removeMaintenanceBlock = async (
     })
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboard Statistics (/api/reservations/dashboard/{nic})
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DashboardStats {
+  pendingCount: number;
+  upcomingApprovedCount: number;
+  totalBookingsCount: number;
+}
+
+export const fetchDashboardStats = async (nic: string): Promise<DashboardStats> => {
+  return handleResponse<DashboardStats>(
+    await fetch(`${API_BASE_URL}/reservations/dashboard/${encodeURIComponent(nic)}`)
+  );
+};
+
