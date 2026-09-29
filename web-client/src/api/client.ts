@@ -6,6 +6,7 @@ import type {
   PagedResponse,
   Station,
   StationListQuery,
+  StationLookupResponse,
   StationSummary,
   UpdateStationRequest,
 } from './types';
@@ -192,6 +193,11 @@ export const stationsApi = {
   /** Read-only pre-check, so the UI can warn before the operator clicks. */
   deactivationEligibility(id: string): Promise<DeactivationEligibility> {
     return request(`/api/stations/${encodeURIComponent(id)}/deactivation-eligibility`);
+  },
+
+  /** Id, code and name of every active station — for dropdowns. */
+  lookup(): Promise<StationLookupResponse[]> {
+    return request('/api/stations/lookup');
   },
 };
 

@@ -10,7 +10,7 @@ import {
   fetchSlotsByStation,
   createReservation,
   updateReservation,
-  SolarStation,
+  StationLookupResponse,
   EnergyReservation,
   EnergyBookingSlot
 } from '../../lib/api';
@@ -36,7 +36,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const isEdit = !!editReservation;
 
   // Dropdown data
-  const [stations, setStations] = useState<SolarStation[]>([]);
+  const [stations, setStations] = useState<StationLookupResponse[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
   
   const [slots, setSlots] = useState<EnergyBookingSlot[]>([]);
@@ -48,7 +48,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   // Form fields
   const [prosumerNIC, setProsumerNIC] = useState('');
-  const [stationCode, setStationCode] = useState('');
+  const [stationId, setStationId] = useState('');
   const [slotId, setSlotId] = useState('');
   const [requestedKWh, setRequestedKWh] = useState('');
 
@@ -61,7 +61,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     fetchStations()
       .then(data => {
         setStations(data);
-        if (data.length && !stationCode) setStationCode(data[0].stationCode);
+        if (data.length && !stationId) setStationId(data[0].id);
       })
       .catch(() =>
         toast({ title: 'Could not load stations', variant: 'warning' })
@@ -72,11 +72,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   // Load slots when station changes
   useEffect(() => {
-    if (!stationCode || !open) return;
+    if (!stationId || !open) return;
     setSlotsLoading(true);
     setSlotId(''); // reset slot
 
-    fetchSlotsByStation(stationCode)
+    fetchSlotsByStation(stationId)
       .then(data => {
         // Only show Open slots with available capacity
         const openSlots = data.filter(s => s.status === 'Open' && s.availableBatterySlots > 0);
@@ -87,19 +87,19 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         toast({ title: 'Could not load slots', variant: 'warning' })
       )
       .finally(() => setSlotsLoading(false));
-  }, [stationCode, open]);
+  }, [stationId, open]);
 
   // Pre-fill / reset fields based on mode
   useEffect(() => {
     if (isEdit && editReservation) {
       setProsumerNIC(editReservation.prosumerNIC);
-      setStationCode(editReservation.stationId);
+      setStationId(editReservation.stationId);
       setSlotId(editReservation.slotId);
       setRequestedKWh(editReservation.requestedKWh?.toString() || '');
     } else {
       setProsumerNIC('');
       setRequestedKWh('');
-      // stationCode and slotId are set by their respective useEffects
+      // stationId and slotId are set by their respective useEffects
     }
     setInlineError(null);
   }, [editReservation, isEdit, open]);
@@ -232,12 +232,12 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
           ) : (
             <Select
-              value={stationCode}
-              onChange={e => setStationCode(e.target.value)}
+              value={stationId}
+              onChange={e => setStationId(e.target.value)}
               required
             >
               {stations.map(s => (
-                <option key={s.stationCode} value={s.stationCode}>
+                <option key={s.id} value={s.id}>
                   {s.stationCode} — {s.name}
                 </option>
               ))}

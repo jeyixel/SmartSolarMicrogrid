@@ -124,7 +124,6 @@ builder.Services.AddSingleton<IScheduleEvaluator, ScheduleEvaluator>();
 // Member 3: energy booking and reservations.
 builder.Services.AddScoped<IEnergyBookingSlotRepository, EnergyBookingSlotRepository>();
 builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationRepository>();
-builder.Services.AddScoped<ISolarStationRepository, SolarStationRepository>();
 builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
 builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
 
