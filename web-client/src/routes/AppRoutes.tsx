@@ -13,6 +13,7 @@ import UserDetailsPage from '../pages/backoffice/UserDetailsPage';
 import { ReservationDashboard } from '../pages/reservation/ReservationDashboard';
 import { StationScheduleManager } from '../pages/reservation/StationScheduleManager';
 import { GridOperatorView } from '../components/GridOperatorView';
+import { BackofficeView } from '../components/BackofficeView';
 import { SessionProvider } from '../context/SessionContext';
 import { AppLayout } from '../components/AppLayout';
 import { StationListPage } from '../pages/StationListPage';
@@ -85,6 +86,7 @@ export default function AppRoutes() {
           <Route path="/backoffice/users/pending" element={<PendingRegistrationsPage />} />
           <Route path="/backoffice/users/deactivation-requests" element={<DeactivationRequestsPage />} />
           <Route path="/backoffice/users/:nic" element={<UserDetailsPage />} />
+          <Route path="/backoffice/reservations" element={<BackofficeView />} />
         </Route>
       </Route>
 

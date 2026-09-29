@@ -17,49 +17,50 @@ public class EnergyReservation
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>
-    /// National Identity Card number of the prosumer.
-    /// Primary identifier for the solar panel owner making the reservation.
-    /// </summary>
-    public string ProsumerNIC { get; set; } = string.Empty;
+    public string ReservationCode { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Backward-compatibility mapping for legacy documents that used "ProsumerId".
-    /// </summary>
-    [BsonElement("ProsumerId")]
-    [BsonIgnoreIfNull]
-    public string? LegacyProsumerId
-    {
-        get => null;
-        set
-        {
-            if (!string.IsNullOrEmpty(value) && string.IsNullOrEmpty(ProsumerNIC))
-            {
-                ProsumerNIC = value;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Foreign key referencing EnergyBookingSlot.Id.
-    /// Links this reservation to the physical time slot at the microgrid hub.
-    /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
     public string SlotId { get; set; } = string.Empty;
 
+    public string StationId { get; set; } = string.Empty;
+
+    public string StationName { get; set; } = string.Empty;
+
+    public DateTime SlotStartTime { get; set; }
+
+    public DateTime SlotEndTime { get; set; }
+
+    public string ProsumerNIC { get; set; } = string.Empty;
+
+    public string ProsumerName { get; set; } = string.Empty;
+
+    public double RequestedKWh { get; set; }
+
     /// <summary>
     /// Lifecycle status of this reservation.
-    /// Allowed values: "Pending" | "Completed" | "Cancelled"
+    /// Allowed values: "Pending" | "Approved" | "CheckedIn" | "Completed" | "Cancelled" | "Rejected"
     /// </summary>
     public string Status { get; set; } = "Pending";
 
-    /// <summary>User ID of the operator who created this reservation (audit trail).</summary>
+    public string? QrCodeToken { get; set; }
+    
+    public DateTime? QrCodeGeneratedAtUtc { get; set; }
+
+    public DateTime? QrCodeVerifiedAtUtc { get; set; }
+
+    public string? QrCodeVerifiedByUserId { get; set; }
+
+    public DateTime ReservationCreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime? CancelledAtUtc { get; set; }
+
+    public string? CancelledByUserId { get; set; }
+
+    public string? CancellationReason { get; set; }
+
     public string CreatedByUserId { get; set; } = string.Empty;
 
-    /// <summary>User ID of the operator who last modified this reservation (audit trail).</summary>
     public string UpdatedByUserId { get; set; } = string.Empty;
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

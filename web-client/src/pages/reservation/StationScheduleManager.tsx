@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  fetchStations,
-  updateStationSlots,
-  addMaintenanceBlock,
-  removeMaintenanceBlock,
-  SolarStation,
-} from '../../lib/api';
+import { stationsApi } from '@/api/client';
+import type {
+  Station,
+  StationLookupResponse,
+  ScheduleEntry,
+  DayOfWeek,
+  UpdateStationRequest,
+} from '@/api/types';
+import { DAYS_OF_WEEK } from '@/api/types';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -19,9 +21,11 @@ import {
   RefreshCw,
   Trash2,
   Loader2,
-  AlertTriangle,
   MapPin,
   Zap,
+  Lock,
+  Plus,
+  Clock,
 } from 'lucide-react';
 
 // ─── Station status chip ──────────────────────────────────────────────────────
@@ -42,56 +46,73 @@ const StationStatusBadge: React.FC<{ status: string }> = ({ status }) => {
 /**
  * StationScheduleManager
  *
- * Allows Grid Operators to manage the physical realities of microgrid nodes:
- *   1. Select a station node from the dropdown.
- *   2. Override its availableBatterySlots count (PATCH /api/stations/{code}/slots).
- *   3. Add maintenance/operational blackout blocks (POST /api/stations/{code}/schedule).
- *   4. Remove existing blocks (DELETE /api/stations/{code}/schedule/{index}).
+ * Separation of Duties:
+ *   - Available Battery Slots: Editable by Grid Operators (and Backoffice) via PUT /api/stations/{id}.
+ *   - Operational Schedules: Maintained by Backoffice. Read-only for Grid Operators.
  */
 export const StationScheduleManager: React.FC = () => {
   const { user } = useAuth();
-  const userId = user?.id || '';
+  const isBackoffice = user?.role === 0;
 
-  const [stations,      setStations]      = useState<SolarStation[]>([]);
-  const [selectedCode,  setSelectedCode]  = useState<string>('');
-  const [station,       setStation]       = useState<SolarStation | null>(null);
-  const [loading,       setLoading]       = useState(true);
-  const [saving,        setSaving]        = useState(false);
+  const [stations,       setStations]       = useState<StationLookupResponse[]>([]);
+  const [selectedId,     setSelectedId]     = useState<string>('');
+  const [station,        setStation]        = useState<Station | null>(null);
+  const [loading,        setLoading]        = useState(true);
+  const [stationLoading, setStationLoading] = useState(false);
+  const [saving,         setSaving]         = useState(false);
 
   // Battery slots override
   const [slotsOverride, setSlotsOverride] = useState('');
 
-  // Maintenance block form
-  const [blockStart,    setBlockStart]    = useState('');
-  const [blockEnd,      setBlockEnd]      = useState('');
-  const [blockReason,   setBlockReason]   = useState('');
+  // Schedule entry form (Backoffice only)
+  const [newDay,       setNewDay]       = useState<DayOfWeek>('Monday');
+  const [newOpenTime,  setNewOpenTime]  = useState('06:00');
+  const [newCloseTime, setNewCloseTime] = useState('20:00');
+  const [newIsClosed,  setNewIsClosed]  = useState(false);
+
+  const loadStationDetails = useCallback(async (id: string) => {
+    if (!id) return;
+    setStationLoading(true);
+    try {
+      const data = await stationsApi.getById(id);
+      setStation(data);
+      setSlotsOverride(String(data.availableBatterySlots));
+    } catch (err: any) {
+      toast({ title: 'Failed to load station details', description: err.message, variant: 'destructive' });
+    } finally {
+      setStationLoading(false);
+    }
+  }, []);
 
   const loadStations = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchStations();
+      const data = await stationsApi.lookup();
       setStations(data);
-      if (data.length && !selectedCode) {
-        setSelectedCode(data[0].stationCode);
+      if (data.length > 0) {
+        const targetId = selectedId && data.some(s => s.id === selectedId) ? selectedId : data[0].id;
+        setSelectedId(targetId);
+        await loadStationDetails(targetId);
+      } else {
+        setStation(null);
       }
     } catch (err: any) {
       toast({ title: 'Failed to load stations', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadStationDetails, selectedId]);
 
-  useEffect(() => { loadStations(); }, [loadStations]);
-
-  // Keep local station object in sync with selected code
   useEffect(() => {
-    const found = stations.find(s => s.stationCode === selectedCode) ?? null;
-    setStation(found);
-    setSlotsOverride(found ? String(found.availableBatterySlots) : '');
-  }, [selectedCode, stations]);
+    loadStations();
+  }, [loadStations]);
 
-  // ─── Battery slots override ───────────────────────────────────────────────
+  const handleStationChange = (id: string) => {
+    setSelectedId(id);
+    loadStationDetails(id);
+  };
+
+  // ─── Battery slots override (PUT /api/stations/{id}) ─────────────────────
   const handleSlotsUpdate = async () => {
     if (!station) return;
     const val = parseInt(slotsOverride, 10);
@@ -111,11 +132,28 @@ export const StationScheduleManager: React.FC = () => {
 
     setSaving(true);
     try {
-      const updated = await updateStationSlots(station.stationCode, val, userId);
-      // Merge update back into local state
-      setStations(prev => prev.map(s => s.stationCode === updated.stationCode ? updated : s));
+      const updatePayload: UpdateStationRequest = {
+        stationCode: station.stationCode,
+        name: station.name,
+        description: station.description,
+        addressLine: station.addressLine,
+        latitude: station.latitude,
+        longitude: station.longitude,
+        capacityKWh: station.capacityKWh,
+        totalBatterySlots: station.totalBatterySlots,
+        availableBatterySlots: val,
+        operationalSchedule: station.operationalSchedule,
+        contactPhone: station.contactPhone,
+      };
+
+      const updated = await stationsApi.update(station.id, updatePayload);
       setStation(updated);
-      toast({ title: 'Battery slots updated', description: `${updated.stationCode} → ${val} available slots.`, variant: 'default' });
+      setSlotsOverride(String(updated.availableBatterySlots));
+      toast({
+        title: 'Battery slots updated',
+        description: `${updated.stationCode} → ${val} available slots.`,
+        variant: 'default',
+      });
     } catch (err: any) {
       toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -123,56 +161,102 @@ export const StationScheduleManager: React.FC = () => {
     }
   };
 
-  // ─── Add maintenance block ────────────────────────────────────────────────
-  const handleAddBlock = async () => {
+  // ─── Add/Update schedule entry (Backoffice only) ─────────────────────────
+  const handleAddScheduleEntry = async () => {
     if (!station) return;
-
-    if (!blockStart || !blockEnd || !blockReason.trim()) {
-      toast({ title: 'Missing fields', description: 'Start time, end time, and reason are all required.', variant: 'destructive' });
+    if (!isBackoffice) {
+      toast({ title: 'Access Denied', description: 'Only Backoffice administrators may modify operational schedules.', variant: 'destructive' });
       return;
     }
-    if (new Date(blockEnd) <= new Date(blockStart)) {
-      toast({ title: 'Invalid time range', description: 'End time must be after start time.', variant: 'destructive' });
+
+    if (!newIsClosed && (!newOpenTime || !newCloseTime)) {
+      toast({ title: 'Missing fields', description: 'Opening and closing times are required.', variant: 'destructive' });
       return;
+    }
+
+    if (!newIsClosed && newCloseTime <= newOpenTime) {
+      toast({ title: 'Invalid hours', description: 'Closing time must be later than opening time.', variant: 'destructive' });
+      return;
+    }
+
+    const existingIndex = (station.operationalSchedule ?? []).findIndex(
+      e => e.dayOfWeek.toLowerCase() === newDay.toLowerCase()
+    );
+
+    const newEntry: ScheduleEntry = {
+      dayOfWeek: newDay,
+      openTime: newIsClosed ? '00:00' : newOpenTime,
+      closeTime: newIsClosed ? '00:01' : newCloseTime,
+      isClosed: newIsClosed,
+    };
+
+    let nextSchedule: ScheduleEntry[];
+    if (existingIndex >= 0) {
+      nextSchedule = [...(station.operationalSchedule ?? [])];
+      nextSchedule[existingIndex] = newEntry;
+    } else {
+      nextSchedule = [...(station.operationalSchedule ?? []), newEntry];
     }
 
     setSaving(true);
     try {
-      const updated = await addMaintenanceBlock(
-        station.stationCode,
-        {
-          startTime: new Date(blockStart).toISOString(),
-          endTime:   new Date(blockEnd).toISOString(),
-          reason:    blockReason.trim(),
-        },
-        userId
-      );
-      setStations(prev => prev.map(s => s.stationCode === updated.stationCode ? updated : s));
+      const updatePayload: UpdateStationRequest = {
+        stationCode: station.stationCode,
+        name: station.name,
+        description: station.description,
+        addressLine: station.addressLine,
+        latitude: station.latitude,
+        longitude: station.longitude,
+        capacityKWh: station.capacityKWh,
+        totalBatterySlots: station.totalBatterySlots,
+        availableBatterySlots: station.availableBatterySlots,
+        operationalSchedule: nextSchedule,
+        contactPhone: station.contactPhone,
+      };
+
+      const updated = await stationsApi.update(station.id, updatePayload);
       setStation(updated);
-      setBlockStart('');
-      setBlockEnd('');
-      setBlockReason('');
-      toast({ title: 'Maintenance block added', description: `Scheduled on ${updated.stationCode}.`, variant: 'default' });
+      toast({ title: 'Schedule updated', description: `Saved operational window for ${newDay}.`, variant: 'default' });
     } catch (err: any) {
-      toast({ title: 'Failed to add block', description: err.message, variant: 'destructive' });
+      toast({ title: 'Failed to update schedule', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
-  // ─── Remove maintenance block ─────────────────────────────────────────────
-  const handleRemoveBlock = async (index: number) => {
+  // ─── Remove schedule entry (Backoffice only) ─────────────────────────────
+  const handleRemoveScheduleEntry = async (index: number) => {
     if (!station) return;
-    if (!window.confirm('Remove this maintenance block?')) return;
+    if (!isBackoffice) {
+      toast({ title: 'Access Denied', description: 'Only Backoffice administrators may modify operational schedules.', variant: 'destructive' });
+      return;
+    }
+    if (!window.confirm('Remove this schedule entry?')) return;
 
     setSaving(true);
     try {
-      const updated = await removeMaintenanceBlock(station.stationCode, index);
-      setStations(prev => prev.map(s => s.stationCode === updated.stationCode ? updated : s));
+      const nextSchedule = [...(station.operationalSchedule ?? [])];
+      nextSchedule.splice(index, 1);
+
+      const updatePayload: UpdateStationRequest = {
+        stationCode: station.stationCode,
+        name: station.name,
+        description: station.description,
+        addressLine: station.addressLine,
+        latitude: station.latitude,
+        longitude: station.longitude,
+        capacityKWh: station.capacityKWh,
+        totalBatterySlots: station.totalBatterySlots,
+        availableBatterySlots: station.availableBatterySlots,
+        operationalSchedule: nextSchedule,
+        contactPhone: station.contactPhone,
+      };
+
+      const updated = await stationsApi.update(station.id, updatePayload);
       setStation(updated);
-      toast({ title: 'Block removed', variant: 'default' });
+      toast({ title: 'Schedule entry removed', variant: 'default' });
     } catch (err: any) {
-      toast({ title: 'Failed to remove block', description: err.message, variant: 'destructive' });
+      toast({ title: 'Failed to remove schedule entry', description: err.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -192,10 +276,9 @@ export const StationScheduleManager: React.FC = () => {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-headline-lg text-slate-900">Station Schedule Manager</h2>
+          <h2 className="text-headline-lg text-slate-900">Station Schedule &amp; Slots Manager</h2>
           <p className="text-body-sm text-muted-foreground mt-0.5">
-            Override battery slot availability and manage operational maintenance windows
-            for microgrid hub nodes.
+            Manage real-time available battery slots and view or maintain operational hours.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={loadStations} disabled={loading}>
@@ -214,23 +297,28 @@ export const StationScheduleManager: React.FC = () => {
         </CardHeader>
         <CardContent className="px-4 pb-4">
           {stations.length === 0 ? (
-            <p className="text-body-sm text-muted-foreground">No stations available.</p>
+            <p className="text-body-sm text-muted-foreground">No active stations available.</p>
           ) : (
             <>
               <Select
-                value={selectedCode}
-                onChange={e => setSelectedCode(e.target.value)}
+                value={selectedId}
+                onChange={e => handleStationChange(e.target.value)}
                 className="max-w-sm"
               >
                 {stations.map(s => (
-                  <option key={s.stationCode} value={s.stationCode}>
+                  <option key={s.id} value={s.id}>
                     {s.stationCode} — {s.name}
                   </option>
                 ))}
               </Select>
 
               {/* Station stats row */}
-              {station && (
+              {stationLoading ? (
+                <div className="mt-4 flex items-center gap-2 text-muted-foreground text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading node details…
+                </div>
+              ) : station && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { label: 'Station Code', value: station.stationCode, mono: true },
@@ -302,96 +390,136 @@ export const StationScheduleManager: React.FC = () => {
           {/* ── Operational Schedule ── */}
           <Card className="rounded-lg border border-slate-200 bg-white shadow-none">
             <CardHeader className="pb-3 pt-4 px-4">
-              <CardTitle className="text-headline-sm flex items-center gap-2">
-                <CalendarOff className="h-4 w-4 text-primary" />
-                Operational Schedule — Maintenance Blocks
+              <CardTitle className="text-headline-sm flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <CalendarOff className="h-4 w-4 text-primary" />
+                  Operational Schedule
+                </span>
+                {!isBackoffice && (
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-normal">
+                    <Lock className="h-3.5 w-3.5" />
+                    Read-only (Backoffice managed)
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-4">
+              {!isBackoffice && (
+                <Alert variant="default" className="text-sm text-slate-700">
+                  <Lock className="h-4 w-4 inline mr-1 text-slate-500" />
+                  Operational schedules are maintained by the <strong>Backoffice</strong> team. Grid Operators have read-only visibility.
+                </Alert>
+              )}
 
-              {/* Existing blocks list */}
-              {station.operationalSchedule.length === 0 ? (
+              {/* Existing schedule entries list */}
+              {(!station.operationalSchedule || station.operationalSchedule.length === 0) ? (
                 <p className="text-body-sm text-muted-foreground py-1">
-                  No maintenance blocks currently scheduled for {station.stationCode}.
+                  No operating hours recorded for {station.stationCode}.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {station.operationalSchedule.map((block, idx) => (
+                  {station.operationalSchedule.map((entry, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2"
+                      className="flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2"
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 flex-shrink-0" />
-                          <span className="text-body-md text-amber-900 font-medium">{block.reason}</span>
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-body-md text-slate-900 font-medium">
+                            {entry.dayOfWeek}
+                          </p>
+                          <p className="text-body-sm font-mono text-slate-600 mt-0.5">
+                            {entry.isClosed ? (
+                              <span className="text-amber-700 font-medium">Closed all day</span>
+                            ) : (
+                              `${entry.openTime} → ${entry.closeTime}`
+                            )}
+                          </p>
                         </div>
-                        <p className="text-body-sm text-amber-700 font-mono mt-0.5">
-                          {new Date(block.startTime).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
-                          {' → '}
-                          {new Date(block.endTime).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
-                        </p>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-7 w-7 p-0 flex-shrink-0"
-                        onClick={() => handleRemoveBlock(idx)}
-                        disabled={saving}
-                        aria-label={`Remove block: ${block.reason}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {isBackoffice && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-7 w-7 p-0 flex-shrink-0"
+                          onClick={() => handleRemoveScheduleEntry(idx)}
+                          disabled={saving}
+                          aria-label={`Remove schedule for ${entry.dayOfWeek}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Add new block form */}
-              <div className="pt-3 border-t border-slate-100">
-                <p className="text-label-md text-slate-700 mb-3 uppercase">
-                  Add New Maintenance Block
-                </p>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-body-sm text-muted-foreground block mb-1">Start Time</label>
-                    <Input
-                      type="datetime-local"
-                      value={blockStart}
-                      onChange={e => setBlockStart(e.target.value)}
-                    />
+              {/* Add/update schedule window form (Backoffice only) */}
+              {isBackoffice && (
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-label-md text-slate-700 mb-3 uppercase">
+                    Add or Update Operating Hours
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3 items-end">
+                    <div>
+                      <label className="text-body-sm text-muted-foreground block mb-1">Day of Week</label>
+                      <Select
+                        value={newDay}
+                        onChange={e => setNewDay(e.target.value as DayOfWeek)}
+                      >
+                        {DAYS_OF_WEEK.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-body-sm text-muted-foreground block mb-1">Opens (HH:mm)</label>
+                      <Input
+                        type="time"
+                        value={newOpenTime}
+                        onChange={e => setNewOpenTime(e.target.value)}
+                        disabled={newIsClosed}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-body-sm text-muted-foreground block mb-1">Closes (HH:mm)</label>
+                      <Input
+                        type="time"
+                        value={newCloseTime}
+                        onChange={e => setNewCloseTime(e.target.value)}
+                        disabled={newIsClosed}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 h-10">
+                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newIsClosed}
+                          onChange={e => setNewIsClosed(e.target.checked)}
+                          className="rounded border-slate-300"
+                        />
+                        Closed all day
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-body-sm text-muted-foreground block mb-1">End Time</label>
-                    <Input
-                      type="datetime-local"
-                      value={blockEnd}
-                      onChange={e => setBlockEnd(e.target.value)}
-                    />
+                  <div className="flex justify-end">
+                    <Button onClick={handleAddScheduleEntry} disabled={saving}>
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                          Saving…
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3.5 w-3.5 mr-1.5" />
+                          Save Hours
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Input
-                    placeholder="Reason (e.g. Scheduled battery calibration)"
-                    value={blockReason}
-                    onChange={e => setBlockReason(e.target.value)}
-                    className="flex-1"
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddBlock(); } }}
-                  />
-                  <Button
-                    onClick={handleAddBlock}
-                    disabled={saving || !blockStart || !blockEnd || !blockReason.trim()}
-                  >
-                    {saving
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : 'Add Block'}
-                  </Button>
-                </div>
-                <Alert variant="default" className="mt-3">
-                  Maintenance blocks are informational — they do not automatically block new bookings.
-                  Operators should manually set station status to "Maintenance" during outages.
-                </Alert>
-              </div>
+              )}
             </CardContent>
           </Card>
         </>

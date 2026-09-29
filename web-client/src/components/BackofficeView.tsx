@@ -80,7 +80,7 @@ export const BackofficeView: React.FC = () => {
                     </span>
                   </p>
                   <p className="text-body-sm text-muted-foreground">
-                    Created: {new Date(res.createdAt).toLocaleString()}
+                    Created: {new Date(res.reservationCreatedAtUtc).toLocaleString()}
                   </p>
                   {slot && (
                     <div className="mt-2 pt-2 border-t border-slate-100 text-body-sm space-y-0.5">

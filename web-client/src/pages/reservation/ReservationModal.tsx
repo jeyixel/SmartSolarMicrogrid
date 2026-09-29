@@ -7,11 +7,12 @@ import { Select } from '../../components/ui/select';
 import { Alert } from '../../components/ui/alert';
 import {
   fetchStations,
-  createSlot,
+  fetchSlotsByStation,
   createReservation,
   updateReservation,
-  SolarStation,
+  StationLookupResponse,
   EnergyReservation,
+  EnergyBookingSlot
 } from '../../lib/api';
 import { toast } from '../../hooks/useToast';
 import { Loader2, Info } from 'lucide-react';
@@ -24,19 +25,6 @@ interface ReservationModalProps {
   editReservation?: EnergyReservation;
 }
 
-/**
- * Handles manual creation and modification of reservations on behalf of Prosumers.
- *
- * CREATE flow:
- *   1. Operator fills in Prosumer NIC, Station, Start/End Time, Energy kWh, Action Type.
- *   2. On submit: POST /api/slots  →  POST /api/reservations (with returned slotId).
- *   3. 7-Day Rule violations return HTTP 400 → shown as a prominent toast.
- *
- * EDIT flow:
- *   1. Modal pre-fills with existing reservation's prosumerNIC.
- *   2. On submit: PUT /api/reservations/{id}.
- *   3. 12-Hour Rule violations return HTTP 400 → shown as a prominent toast.
- */
 export const ReservationModal: React.FC<ReservationModalProps> = ({
   open,
   onClose,
@@ -48,20 +36,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const isEdit = !!editReservation;
 
   // Dropdown data
-  const [stations, setStations]   = useState<SolarStation[]>([]);
+  const [stations, setStations] = useState<StationLookupResponse[]>([]);
   const [stationsLoading, setStationsLoading] = useState(false);
+  
+  const [slots, setSlots] = useState<EnergyBookingSlot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [inlineError, setInlineError] = useState<{ title: string; message: string } | null>(null);
 
-  // ─── Form fields ──────────────────────────────────────────────────────────
-  const [prosumerNIC,  setProsumerNIC]  = useState('');
-  const [stationCode,  setStationCode]  = useState('');
-  const [startTime,    setStartTime]    = useState('');
-  const [endTime,      setEndTime]      = useState('');
-  const [energyKWh,    setEnergyKWh]    = useState('');
-  const [actionType,   setActionType]   = useState<'Drop-off' | 'Charge'>('Drop-off');
+  // Form fields
+  const [prosumerNIC, setProsumerNIC] = useState('');
+  const [stationId, setStationId] = useState('');
+  const [slotId, setSlotId] = useState('');
+  const [requestedKWh, setRequestedKWh] = useState('');
 
   // Load stations whenever modal opens
   useEffect(() => {
@@ -72,7 +61,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     fetchStations()
       .then(data => {
         setStations(data);
-        if (data.length && !stationCode) setStationCode(data[0].stationCode);
+        if (data.length && !stationId) setStationId(data[0].id);
       })
       .catch(() =>
         toast({ title: 'Could not load stations', variant: 'warning' })
@@ -81,16 +70,36 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Load slots when station changes
+  useEffect(() => {
+    if (!stationId || !open) return;
+    setSlotsLoading(true);
+    setSlotId(''); // reset slot
+
+    fetchSlotsByStation(stationId)
+      .then(data => {
+        // Only show Open slots with available capacity
+        const openSlots = data.filter(s => s.status === 'Open' && s.availableBatterySlots > 0);
+        setSlots(openSlots);
+        if (openSlots.length > 0) setSlotId(openSlots[0].id);
+      })
+      .catch(() =>
+        toast({ title: 'Could not load slots', variant: 'warning' })
+      )
+      .finally(() => setSlotsLoading(false));
+  }, [stationId, open]);
+
   // Pre-fill / reset fields based on mode
   useEffect(() => {
     if (isEdit && editReservation) {
       setProsumerNIC(editReservation.prosumerNIC);
+      setStationId(editReservation.stationId);
+      setSlotId(editReservation.slotId);
+      setRequestedKWh(editReservation.requestedKWh?.toString() || '');
     } else {
       setProsumerNIC('');
-      setStartTime('');
-      setEndTime('');
-      setEnergyKWh('');
-      setActionType('Drop-off');
+      setRequestedKWh('');
+      // stationId and slotId are set by their respective useEffects
     }
     setInlineError(null);
   }, [editReservation, isEdit, open]);
@@ -99,52 +108,46 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     e.preventDefault();
     setInlineError(null);
 
-    // Basic client-side validation
     if (!prosumerNIC.trim()) {
       setInlineError({ title: 'Missing field', message: 'Prosumer NIC is required.' });
       return;
     }
-    if (!isEdit && (!stationCode || !startTime || !endTime || !energyKWh)) {
-      setInlineError({ title: 'Missing fields', message: 'All fields are required to create a reservation.' });
+    if (!slotId) {
+      setInlineError({ title: 'Missing field', message: 'Please select an open booking slot.' });
       return;
     }
-    if (!isEdit && new Date(endTime) <= new Date(startTime)) {
-      setInlineError({ title: 'Invalid times', message: 'End time must be after start time.' });
+    if (!requestedKWh) {
+      setInlineError({ title: 'Missing field', message: 'Requested kWh is required.' });
       return;
     }
 
     setSubmitting(true);
     try {
       if (isEdit && editReservation) {
-        // ── EDIT: update prosumerNIC (slot details are immutable after creation)
         await updateReservation(
           editReservation.id,
-          { ...editReservation, prosumerNIC },
+          { 
+            prosumerNIC,
+            slotId,
+            requestedKWh: parseFloat(requestedKWh)
+          },
           userId
         );
         toast({
           title: 'Reservation updated',
-          description: `NIC updated to ${prosumerNIC}.`,
+          description: `Updated reservation for ${prosumerNIC}.`,
           variant: 'default',
         });
       } else {
-        // ── CREATE: first create the physical slot, then the reservation
-        const slot = await createSlot(
-          {
-            stationId:       stationCode,
-            startTime:       new Date(startTime).toISOString(),
-            endTime:         new Date(endTime).toISOString(),
-            energyAmountKWh: parseFloat(energyKWh),
-            actionType,
-            status:          'Available',
-          },
-          userId
-        );
-
-        await createReservation({ prosumerNIC, slotId: slot.id }, userId);
+        await createReservation({ 
+          prosumerNIC, 
+          slotId,
+          requestedKWh: parseFloat(requestedKWh)
+        } as any, userId);
+        
         toast({
           title: 'Reservation created',
-          description: `Slot at ${stationCode} booked for ${prosumerNIC}.`,
+          description: `Slot booked for ${prosumerNIC}.`,
           variant: 'default',
         });
       }
@@ -154,7 +157,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       const rule: string | undefined = err.rule;
       const isRule = rule === '7DayRule' || rule === '12HourRule';
 
-      // Show a prominent inline error AND a toast for maximum visibility
       const errorTitle = rule === '7DayRule'
         ? '7-Day Scheduling Rule Violation'
         : rule === '12HourRule'
@@ -165,7 +167,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       toast({ title: errorTitle, description: err.message, variant: 'destructive' });
 
       if (isRule) {
-        // Don't close the modal — let the operator see the error in context
         return;
       }
     } finally {
@@ -180,20 +181,18 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       title={isEdit ? 'Edit Reservation' : 'New Reservation'}
       description={
         isEdit
-          ? 'Update the prosumer details for this reservation. The slot assignment is locked after creation.'
-          : 'Create a new battery slot and assign it to a prosumer.'
+          ? 'Update the reservation details.'
+          : 'Assign an open battery slot to a prosumer.'
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
-        {/* ── Inline error banner ── */}
         {inlineError && (
           <Alert variant="destructive" title={inlineError.title}>
             {inlineError.message}
           </Alert>
         )}
 
-        {/* ── Prosumer NIC ── */}
         <div>
           <label className="text-label-md text-slate-700 block mb-1">
             Prosumer NIC <span className="text-red-500">*</span>
@@ -205,126 +204,80 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             required
             aria-required="true"
           />
-          <p className="text-body-sm text-muted-foreground mt-0.5">
-            National Identity Card number of the solar panel owner.
-          </p>
         </div>
 
-        {/* ── CREATE-only fields ── */}
-        {!isEdit && (
-          <>
-            {/* Station selector */}
-            <div>
-              <label className="text-label-md text-slate-700 block mb-1">
-                Microgrid Station <span className="text-red-500">*</span>
-              </label>
-              {stationsLoading ? (
-                <div className="flex items-center gap-2 h-9 text-muted-foreground text-body-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading stations…
-                </div>
+        <div>
+          <label className="text-label-md text-slate-700 block mb-1">
+            Requested Energy (kWh) <span className="text-red-500">*</span>
+          </label>
+          <Input
+            type="number"
+            min="0.1"
+            step="0.1"
+            placeholder="e.g. 25.5"
+            value={requestedKWh}
+            onChange={e => setRequestedKWh(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="text-label-md text-slate-700 block mb-1">
+            Microgrid Station <span className="text-red-500">*</span>
+          </label>
+          {stationsLoading ? (
+            <div className="flex items-center gap-2 h-9 text-muted-foreground text-body-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading stations…
+            </div>
+          ) : (
+            <Select
+              value={stationId}
+              onChange={e => setStationId(e.target.value)}
+              required
+            >
+              {stations.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.stationCode} — {s.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
+
+        <div>
+          <label className="text-label-md text-slate-700 block mb-1">
+            Booking Slot <span className="text-red-500">*</span>
+          </label>
+          {slotsLoading ? (
+            <div className="flex items-center gap-2 h-9 text-muted-foreground text-body-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading open slots…
+            </div>
+          ) : (
+            <Select
+              value={slotId}
+              onChange={e => setSlotId(e.target.value)}
+              required
+              disabled={slots.length === 0}
+            >
+              {slots.length === 0 ? (
+                <option value="">No available slots found</option>
               ) : (
-                <Select
-                  value={stationCode}
-                  onChange={e => setStationCode(e.target.value)}
-                  required
-                >
-                  {stations.map(s => (
-                    <option key={s.stationCode} value={s.stationCode}>
-                      {s.stationCode} — {s.name}
-                      {' '}({s.availableBatterySlots} slots available)
-                    </option>
-                  ))}
-                </Select>
+                slots.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {new Date(s.startTime).toLocaleString()} - {new Date(s.endTime).toLocaleTimeString()} ({s.availableBatterySlots} bays open)
+                  </option>
+                ))
               )}
-            </div>
+            </Select>
+          )}
+        </div>
 
-            {/* Time range */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-label-md text-slate-700 block mb-1">
-                  Start Time <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="datetime-local"
-                  value={startTime}
-                  onChange={e => setStartTime(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-label-md text-slate-700 block mb-1">
-                  End Time <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="datetime-local"
-                  value={endTime}
-                  onChange={e => setEndTime(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+        <Alert variant="warning">
+          <strong>Rules:</strong> Slots must start within the next 7 days. Changes/Cancellations are blocked if starting within 12 hours.
+        </Alert>
 
-            {/* Energy + Action */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-label-md text-slate-700 block mb-1">
-                  Energy Amount (kWh) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  placeholder="e.g. 25.5"
-                  value={energyKWh}
-                  onChange={e => setEnergyKWh(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-label-md text-slate-700 block mb-1">
-                  Action Type <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={actionType}
-                  onChange={e => setActionType(e.target.value as 'Drop-off' | 'Charge')}
-                  required
-                >
-                  <option value="Drop-off">Drop-off (Export to Grid)</option>
-                  <option value="Charge">Charge (Import from Grid)</option>
-                </Select>
-              </div>
-            </div>
-
-            {/* 7-Day Rule callout */}
-            <Alert variant="warning">
-              <strong>7-Day Scheduling Rule:</strong> The slot's start time must fall within the
-              next 7 days. Slots in the past or more than 7 days away will be rejected by the API.
-            </Alert>
-          </>
-        )}
-
-        {/* EDIT mode: show locked slot context */}
-        {isEdit && editReservation && (
-          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-              <Info className="h-3.5 w-3.5" />
-              <span className="text-label-md uppercase">Slot details (read-only)</span>
-            </div>
-            <p className="text-body-sm text-slate-600">
-              Slot ID: <span className="font-mono text-xs">{editReservation.slotId}</span>
-            </p>
-            <p className="text-body-sm text-slate-500 mt-0.5">
-              To change the station or time, cancel this reservation and create a new one.
-            </p>
-            <Alert variant="warning" className="mt-2">
-              <strong>12-Hour Modification Rule:</strong> Changes are blocked if the slot
-              starts within the next 12 hours.
-            </Alert>
-          </div>
-        )}
-
-        {/* Footer actions */}
         <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
           <Button
             type="button"
@@ -334,14 +287,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           >
             Discard
           </Button>
-          <Button type="submit" disabled={submitting || stationsLoading}>
+          <Button type="submit" disabled={submitting || stationsLoading || slotsLoading || !slotId}>
             {submitting ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                {isEdit ? 'Saving…' : 'Creating…'}
+                Saving…
               </>
             ) : (
-              isEdit ? 'Save Changes' : 'Create Reservation'
+              'Save Reservation'
             )}
           </Button>
         </div>

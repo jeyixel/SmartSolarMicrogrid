@@ -11,20 +11,22 @@ const API_BASE_URL = 'http://localhost:5127/api';
  */
 export interface EnergyBookingSlot {
   id: string;
-  /** FK → SolarStationInfo.stationCode (e.g. "CMB-NORTH-01") */
+  slotCode: string;
   stationId: string;
+  stationName: string;
+  slotDate: string;  // ISO 8601 UTC
   startTime: string; // ISO 8601 UTC
   endTime: string;   // ISO 8601 UTC
-  /** Energy capacity of this slot in kWh */
-  energyAmountKWh: number;
-  /** "Drop-off" | "Charge" */
-  actionType: 'Drop-off' | 'Charge';
-  /** "Available" | "Booked" | "Maintenance" */
-  status: 'Available' | 'Booked' | 'Maintenance';
+  tradeType: 'Charging' | 'Discharging' | 'BatterySwap' | 'Drop-off';
+  totalCapacityKWh: number;
+  totalBatterySlots: number;
+  bookedBatterySlots: number;
+  availableBatterySlots: number;
+  status: 'Open' | 'Full' | 'Closed' | 'Expired';
   createdByUserId: string;
   updatedByUserId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
 }
 
 /**
@@ -34,16 +36,27 @@ export interface EnergyBookingSlot {
  */
 export interface EnergyReservation {
   id: string;
-  /** National Identity Card number — primary prosumer identifier */
-  prosumerNIC: string;
-  /** FK → EnergyBookingSlot.id */
+  reservationCode: string;
   slotId: string;
-  /** "Pending" | "Completed" | "Cancelled" */
-  status: 'Pending' | 'Completed' | 'Cancelled';
+  stationId: string;
+  stationName: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  prosumerNIC: string;
+  prosumerName: string;
+  requestedKWh: number;
+  status: 'Pending' | 'Approved' | 'CheckedIn' | 'Completed' | 'Cancelled' | 'Rejected';
+  qrCodeToken?: string | null;
+  qrCodeGeneratedAtUtc?: string | null;
+  qrCodeVerifiedAtUtc?: string | null;
+  qrCodeVerifiedByUserId?: string | null;
+  reservationCreatedAtUtc: string;
+  lastModifiedAtUtc: string;
+  cancelledAtUtc?: string | null;
+  cancelledByUserId?: string | null;
+  cancellationReason?: string | null;
   createdByUserId: string;
   updatedByUserId: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface OperationalScheduleBlock {
@@ -99,6 +112,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 function authHeaders(userId?: string): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = sessionStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {
+    // Ignore sessionStorage error in restricted environments
+  }
   if (userId) headers['X-User-Id'] = userId;
   return headers;
 }
@@ -118,7 +139,7 @@ export const fetchSlotsByStation = async (stationId: string): Promise<EnergyBook
 };
 
 export const createSlot = async (
-  slot: Omit<EnergyBookingSlot, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId'>,
+  slot: Omit<EnergyBookingSlot, 'id' | 'createdAtUtc' | 'updatedAtUtc' | 'createdByUserId' | 'updatedByUserId'>,
   userId?: string
 ): Promise<EnergyBookingSlot> => {
   return handleResponse<EnergyBookingSlot>(
@@ -201,51 +222,28 @@ export const cancelReservation = async (id: string, userId?: string): Promise<vo
 // SolarStations  (/api/stations)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const fetchStations = async (): Promise<SolarStation[]> => {
-  return handleResponse<SolarStation[]>(await fetch(`${API_BASE_URL}/stations`));
-};
+export interface StationLookupResponse {
+  id: string;
+  stationCode: string;
+  name: string;
+}
 
-export const fetchStation = async (stationCode: string): Promise<SolarStation> => {
-  return handleResponse<SolarStation>(
-    await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(stationCode)}`)
-  );
-};
-
-export const updateStationSlots = async (
-  stationCode: string,
-  availableBatterySlots: number,
-  userId?: string
-): Promise<SolarStation> => {
-  return handleResponse<SolarStation>(
-    await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(stationCode)}/slots`, {
-      method: 'PATCH',
-      headers: authHeaders(userId),
-      body: JSON.stringify({ availableBatterySlots }),
+export const fetchStations = async (): Promise<StationLookupResponse[]> => {
+  return handleResponse<StationLookupResponse[]>(
+    await fetch(`${API_BASE_URL}/stations/lookup`, {
+      headers: authHeaders(),
     })
   );
 };
 
-export const addMaintenanceBlock = async (
-  stationCode: string,
-  block: OperationalScheduleBlock,
-  userId?: string
-): Promise<SolarStation> => {
-  return handleResponse<SolarStation>(
-    await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(stationCode)}/schedule`, {
-      method: 'POST',
-      headers: authHeaders(userId),
-      body: JSON.stringify(block),
-    })
-  );
+export const fetchStationLookup = async (): Promise<StationLookupResponse[]> => {
+  return fetchStations();
 };
 
-export const removeMaintenanceBlock = async (
-  stationCode: string,
-  index: number
-): Promise<SolarStation> => {
+export const fetchStation = async (id: string): Promise<SolarStation> => {
   return handleResponse<SolarStation>(
-    await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(stationCode)}/schedule/${index}`, {
-      method: 'DELETE',
+    await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(id)}`, {
+      headers: authHeaders(),
     })
   );
 };
