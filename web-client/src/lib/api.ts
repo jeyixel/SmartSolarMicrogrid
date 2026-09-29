@@ -11,20 +11,22 @@ const API_BASE_URL = 'http://localhost:5127/api';
  */
 export interface EnergyBookingSlot {
   id: string;
-  /** FK → SolarStationInfo.stationCode (e.g. "CMB-NORTH-01") */
+  slotCode: string;
   stationId: string;
+  stationName: string;
+  slotDate: string;  // ISO 8601 UTC
   startTime: string; // ISO 8601 UTC
   endTime: string;   // ISO 8601 UTC
-  /** Energy capacity of this slot in kWh */
-  energyAmountKWh: number;
-  /** "Drop-off" | "Charge" */
-  actionType: 'Drop-off' | 'Charge';
-  /** "Available" | "Booked" | "Maintenance" */
-  status: 'Available' | 'Booked' | 'Maintenance';
+  tradeType: 'Charging' | 'Discharging' | 'BatterySwap' | 'Drop-off';
+  totalCapacityKWh: number;
+  totalBatterySlots: number;
+  bookedBatterySlots: number;
+  availableBatterySlots: number;
+  status: 'Open' | 'Full' | 'Closed' | 'Expired';
   createdByUserId: string;
   updatedByUserId: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAtUtc: string;
+  updatedAtUtc: string;
 }
 
 /**
@@ -34,16 +36,27 @@ export interface EnergyBookingSlot {
  */
 export interface EnergyReservation {
   id: string;
-  /** National Identity Card number — primary prosumer identifier */
-  prosumerNIC: string;
-  /** FK → EnergyBookingSlot.id */
+  reservationCode: string;
   slotId: string;
-  /** "Pending" | "Completed" | "Cancelled" */
-  status: 'Pending' | 'Completed' | 'Cancelled';
+  stationId: string;
+  stationName: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  prosumerNIC: string;
+  prosumerName: string;
+  requestedKWh: number;
+  status: 'Pending' | 'Approved' | 'CheckedIn' | 'Completed' | 'Cancelled' | 'Rejected';
+  qrCodeToken?: string | null;
+  qrCodeGeneratedAtUtc?: string | null;
+  qrCodeVerifiedAtUtc?: string | null;
+  qrCodeVerifiedByUserId?: string | null;
+  reservationCreatedAtUtc: string;
+  lastModifiedAtUtc: string;
+  cancelledAtUtc?: string | null;
+  cancelledByUserId?: string | null;
+  cancellationReason?: string | null;
   createdByUserId: string;
   updatedByUserId: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface OperationalScheduleBlock {
