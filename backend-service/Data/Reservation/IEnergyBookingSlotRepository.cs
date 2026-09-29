@@ -10,4 +10,6 @@ public interface IEnergyBookingSlotRepository
     Task CreateAsync(EnergyBookingSlot slot);
     Task UpdateAsync(string id, EnergyBookingSlot slot);
     Task DeleteAsync(string id);
+    Task<bool> IncrementBookedSlotsAtomicAsync(string slotId, int count);
+    Task DecrementBookedSlotsAsync(string slotId, int count);
 }

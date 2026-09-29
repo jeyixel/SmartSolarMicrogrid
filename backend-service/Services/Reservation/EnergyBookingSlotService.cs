@@ -23,11 +23,11 @@ public class EnergyBookingSlotService : IEnergyBookingSlotService
 
     public async Task<EnergyBookingSlot> CreateSlotAsync(EnergyBookingSlot slot, string createdByUserId)
     {
-        slot.Status = "Available";
+        slot.Status = "Open";
         slot.CreatedByUserId = createdByUserId;
         slot.UpdatedByUserId = createdByUserId;
-        slot.CreatedAt = DateTime.UtcNow;
-        slot.UpdatedAt = DateTime.UtcNow;
+        slot.CreatedAtUtc = DateTime.UtcNow;
+        slot.UpdatedAtUtc = DateTime.UtcNow;
 
         await _slotRepo.CreateAsync(slot);
         return slot;
@@ -42,9 +42,9 @@ public class EnergyBookingSlotService : IEnergyBookingSlotService
         // Preserve immutable audit fields
         slot.Id = id;
         slot.CreatedByUserId = existing.CreatedByUserId;
-        slot.CreatedAt = existing.CreatedAt;
+        slot.CreatedAtUtc = existing.CreatedAtUtc;
         slot.UpdatedByUserId = updatedByUserId;
-        slot.UpdatedAt = DateTime.UtcNow;
+        slot.UpdatedAtUtc = DateTime.UtcNow;
 
         await _slotRepo.UpdateAsync(id, slot);
     }

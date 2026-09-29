@@ -15,6 +15,7 @@ import com.example.smartsolarmicrogrid.R
 import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
 import com.example.smartsolarmicrogrid.data.local.AuthSessionEntity
 import com.example.smartsolarmicrogrid.data.local.TokenManager
+import com.example.smartsolarmicrogrid.data.remote.ApiConfig
 import com.example.smartsolarmicrogrid.data.remote.AuthApiClient
 import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.remote.dto.AuthenticatedUserDto
@@ -41,6 +42,7 @@ import java.util.concurrent.Executors
  */
 class LoginActivity : AppCompatActivity() {
 
+    private lateinit var tvAppTitle: TextView
     private lateinit var tilIdentifier: TextInputLayout
     private lateinit var etIdentifier: TextInputEditText
     private lateinit var tilPassword: TextInputLayout
@@ -49,13 +51,15 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progressBarLogin: ProgressBar
     private lateinit var tvGoToRegister: TextView
 
-    private val authApiClient = AuthApiClient()
+    private var authApiClient = AuthApiClient()
     private lateinit var authSessionDao: AuthSessionDao
     private lateinit var tokenManager: TokenManager
     private val backgroundExecutor = Executors.newSingleThreadExecutor()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ApiConfig.init(this)
+        authApiClient = AuthApiClient(ApiConfig.getBaseUrl())
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
 
@@ -76,6 +80,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        tvAppTitle = findViewById(R.id.tvAppTitle)
         tilIdentifier = findViewById(R.id.tilIdentifier)
         etIdentifier = findViewById(R.id.etIdentifier)
         tilPassword = findViewById(R.id.tilPassword)
@@ -86,6 +91,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        tvAppTitle.setOnLongClickListener {
+            showServerConfigDialog()
+            true
+        }
+
         etIdentifier.doAfterTextChanged {
             tilIdentifier.error = null
         }
@@ -103,6 +113,58 @@ class LoginActivity : AppCompatActivity() {
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    private fun showServerConfigDialog() {
+        val options = arrayOf(
+            "AVD Emulator -> Dotnet Kestrel (${ApiConfig.URL_AVD_KESTREL})",
+            "AVD Emulator -> Windows IIS (${ApiConfig.URL_AVD_IIS})",
+            "Physical Phone -> Wi-Fi IIS (${ApiConfig.URL_PHYSICAL_IIS})",
+            "Custom URL..."
+        )
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Server Network Config")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> updateServerUrl(ApiConfig.URL_AVD_KESTREL)
+                    1 -> updateServerUrl(ApiConfig.URL_AVD_IIS)
+                    2 -> updateServerUrl(ApiConfig.URL_PHYSICAL_IIS)
+                    3 -> showCustomUrlDialog()
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showCustomUrlDialog() {
+        val input = android.widget.EditText(this).apply {
+            setText(ApiConfig.getBaseUrl())
+            setSelection(text.length)
+        }
+        val container = android.widget.FrameLayout(this).apply {
+            val padding = (24 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding / 2, padding, 0)
+            addView(input)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Enter Backend Server URL")
+            .setView(container)
+            .setPositiveButton("Save") { _, _ ->
+                val newUrl = input.text.toString().trim()
+                if (newUrl.isNotEmpty()) {
+                    updateServerUrl(newUrl)
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateServerUrl(newUrl: String) {
+        ApiConfig.setBaseUrl(this, newUrl)
+        authApiClient = AuthApiClient(ApiConfig.getBaseUrl())
+        android.widget.Toast.makeText(this, "API URL set to: ${ApiConfig.getBaseUrl()}", android.widget.Toast.LENGTH_LONG).show()
     }
 
     private fun verifyRememberedSessionOnStartup() {

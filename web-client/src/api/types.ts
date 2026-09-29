@@ -102,6 +102,7 @@ export interface CreateStationRequest {
  * an ordinary update.
  */
 export interface UpdateStationRequest {
+  stationCode?: string;
   name: string;
   description?: string | null;
   addressLine?: string | null;
@@ -112,6 +113,13 @@ export interface UpdateStationRequest {
   availableBatterySlots: number;
   operationalSchedule?: ScheduleEntry[];
   contactPhone?: string | null;
+}
+
+/** Minimal station identity, for dropdowns in Member 3 and Member 4's screens. */
+export interface StationLookupResponse {
+  id: string;
+  stationCode: string;
+  name: string;
 }
 
 /** Answer to "may this station be deactivated right now?" */

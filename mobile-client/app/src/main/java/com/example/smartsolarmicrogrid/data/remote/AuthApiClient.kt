@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
  * Communicates with ASP.NET Core backend over HTTP/REST.
  */
 class AuthApiClient(
-    private val baseUrl: String = DEFAULT_BASE_URL
+    private val baseUrl: String = ApiConfig.getBaseUrl()
 ) {
 
     private val executor = Executors.newSingleThreadExecutor()

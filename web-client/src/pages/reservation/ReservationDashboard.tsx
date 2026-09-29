@@ -2,12 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   fetchReservations,
-  fetchSlots,
-  fetchStations,
   cancelReservation,
   EnergyReservation,
-  EnergyBookingSlot,
-  SolarStation,
 } from '../../lib/api';
 import {
   Table,
@@ -18,32 +14,24 @@ import {
   TableCell,
 } from '../../components/ui/table';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
 import { toast } from '../../hooks/useToast';
 import { ReservationModal } from './ReservationModal';
 import {
   PlusCircle,
   RefreshCw,
-  Zap,
-  BatteryCharging,
   Clock,
   CheckCircle2,
   XCircle,
   Loader2,
 } from 'lucide-react';
 
-// ─── Enriched row type: joins reservation + slot + station ───────────────────
-interface EnrichedReservation {
-  reservation: EnergyReservation;
-  slot?: EnergyBookingSlot;
-  station?: SolarStation;
-}
-
-// ─── Status chip ─────────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<string, { chip: string; dot: string }> = {
   Pending:   { chip: 'bg-amber-50 text-amber-700 border-amber-200',   dot: 'bg-amber-500 animate-pulse' },
+  Approved:  { chip: 'bg-blue-50 text-blue-700 border-blue-200',      dot: 'bg-blue-500' },
+  CheckedIn: { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200',dot: 'bg-indigo-500' },
   Completed: { chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
   Cancelled: { chip: 'bg-red-50 text-red-700 border-red-200',         dot: 'bg-red-400' },
+  Rejected:  { chip: 'bg-red-50 text-red-900 border-red-300',         dot: 'bg-red-600' },
 };
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
@@ -59,25 +47,6 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-// ─── Action type chip ─────────────────────────────────────────────────────────
-const ActionTypeBadge: React.FC<{ type?: string }> = ({ type }) => {
-  if (!type) return <span className="text-muted-foreground font-mono text-xs">—</span>;
-  const isDropOff = type === 'Drop-off';
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-label-sm font-mono ${
-      isDropOff
-        ? 'bg-blue-50 text-blue-700 border-blue-200'
-        : 'bg-violet-50 text-violet-700 border-violet-200'
-    }`}>
-      {isDropOff
-        ? <Zap className="h-3 w-3 flex-shrink-0" />
-        : <BatteryCharging className="h-3 w-3 flex-shrink-0" />}
-      {type}
-    </span>
-  );
-};
-
-// ─── Summary KPI chip ─────────────────────────────────────────────────────────
 const KpiChip: React.FC<{ label: string; count: number; dotClass: string }> = ({
   label, count, dotClass,
 }) => (
@@ -88,36 +57,20 @@ const KpiChip: React.FC<{ label: string; count: number; dotClass: string }> = ({
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export const ReservationDashboard: React.FC = () => {
   const { user } = useAuth();
   const userId = user?.id || '';
-  const [enriched, setEnriched]     = useState<EnrichedReservation[]>([]);
+  const [reservations, setReservations] = useState<EnergyReservation[]>([]);
   const [loading, setLoading]        = useState(true);
   const [modalOpen, setModalOpen]    = useState(false);
   const [editTarget, setEditTarget]  = useState<EnergyReservation | undefined>();
   const [cancelling, setCancelling]  = useState<string | null>(null);
 
-  // Fetch all three collections and join client-side
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [reservations, slots, stations] = await Promise.all([
-        fetchReservations(),
-        fetchSlots(),
-        fetchStations(),
-      ]);
-
-      const slotMap     = new Map(slots.map(s => [s.id, s]));
-      const stationMap  = new Map(stations.map(s => [s.stationCode, s]));
-
-      setEnriched(
-        reservations.map(r => {
-          const slot    = slotMap.get(r.slotId);
-          const station = slot ? stationMap.get(slot.stationId) : undefined;
-          return { reservation: r, slot, station };
-        })
-      );
+      const data = await fetchReservations();
+      setReservations(data);
     } catch (err: any) {
       toast({
         title: 'Failed to load reservations',
@@ -167,9 +120,9 @@ export const ReservationDashboard: React.FC = () => {
   };
 
   // Counts for KPI row
-  const pending   = enriched.filter(e => e.reservation.status === 'Pending').length;
-  const completed = enriched.filter(e => e.reservation.status === 'Completed').length;
-  const cancelled = enriched.filter(e => e.reservation.status === 'Cancelled').length;
+  const pending   = reservations.filter(r => r.status === 'Pending').length;
+  const completed = reservations.filter(r => r.status === 'Completed').length;
+  const cancelled = reservations.filter(r => r.status === 'Cancelled').length;
 
   return (
     <div className="space-y-4">
@@ -179,11 +132,6 @@ export const ReservationDashboard: React.FC = () => {
           <h2 className="text-headline-lg text-slate-900">Reservation Dashboard</h2>
           <p className="text-body-sm text-muted-foreground mt-0.5">
             Monitor and manage all prosumer energy trading appointments.
-            Joins <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">EnergyReservations</span>
-            {' ↔ '}
-            <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">EnergyBookingSlots</span>
-            {' ↔ '}
-            <span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">SolarStationInfo</span>
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -200,7 +148,7 @@ export const ReservationDashboard: React.FC = () => {
 
       {/* KPI summary row */}
       <div className="flex gap-3 flex-wrap">
-        <KpiChip label="Total"     count={enriched.length} dotClass="bg-slate-400" />
+        <KpiChip label="Total"     count={reservations.length} dotClass="bg-slate-400" />
         <KpiChip label="Pending"   count={pending}         dotClass="bg-amber-500 animate-pulse" />
         <KpiChip label="Completed" count={completed}       dotClass="bg-emerald-500" />
         <KpiChip label="Cancelled" count={cancelled}       dotClass="bg-red-400" />
@@ -211,11 +159,11 @@ export const ReservationDashboard: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow className="h-7">
+              <TableHead>Res Code</TableHead>
               <TableHead>Prosumer NIC</TableHead>
               <TableHead>Station</TableHead>
               <TableHead>Date &amp; Time Window</TableHead>
-              <TableHead className="text-right">Energy (kWh)</TableHead>
-              <TableHead>Action Type</TableHead>
+              <TableHead className="text-right">Requested Energy</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right pr-4">Actions</TableHead>
             </TableRow>
@@ -230,7 +178,7 @@ export const ReservationDashboard: React.FC = () => {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : enriched.length === 0 ? (
+            ) : reservations.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-16">
                   <div className="flex flex-col items-center gap-3">
@@ -244,8 +192,13 @@ export const ReservationDashboard: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              enriched.map(({ reservation: r, slot, station }) => (
+              reservations.map(r => (
                 <TableRow key={r.id}>
+                  {/* Reservation Code */}
+                  <TableCell>
+                    <span className="font-mono text-xs text-slate-900">{r.reservationCode}</span>
+                  </TableCell>
+                  
                   {/* Prosumer NIC */}
                   <TableCell>
                     <span className="font-mono text-xs text-slate-900">{r.prosumerNIC}</span>
@@ -253,50 +206,35 @@ export const ReservationDashboard: React.FC = () => {
 
                   {/* Station */}
                   <TableCell>
-                    {slot ? (
                       <div>
-                        <p className="font-mono text-xs text-slate-900">{slot.stationId}</p>
-                        {station && (
-                          <p className="text-body-sm text-muted-foreground">{station.name}</p>
-                        )}
+                        <p className="font-mono text-xs text-slate-900">{r.stationId}</p>
+                        <p className="text-body-sm text-muted-foreground">{r.stationName}</p>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground font-mono text-xs">Slot missing</span>
-                    )}
                   </TableCell>
 
                   {/* Date & Time */}
                   <TableCell>
-                    {slot ? (
                       <div className="font-mono text-xs">
                         <p className="text-slate-900">
-                          {new Date(slot.startTime).toLocaleString('en-GB', {
+                          {new Date(r.slotStartTime).toLocaleString('en-GB', {
                             dateStyle: 'short',
                             timeStyle: 'short',
                           })}
                         </p>
                         <p className="text-muted-foreground">
-                          → {new Date(slot.endTime).toLocaleString('en-GB', {
+                          → {new Date(r.slotEndTime).toLocaleString('en-GB', {
                             dateStyle: 'short',
                             timeStyle: 'short',
                           })}
                         </p>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
                   </TableCell>
 
                   {/* Energy */}
                   <TableCell className="text-right">
                     <span className="font-mono text-xs text-slate-900">
-                      {slot ? slot.energyAmountKWh.toFixed(1) : '—'}
+                      {r.requestedKWh ? r.requestedKWh.toFixed(1) + ' kWh' : '—'}
                     </span>
-                  </TableCell>
-
-                  {/* Action Type */}
-                  <TableCell>
-                    <ActionTypeBadge type={slot?.actionType} />
                   </TableCell>
 
                   {/* Status */}
@@ -332,7 +270,7 @@ export const ReservationDashboard: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex justify-end">
-                        {r.status === 'Completed'
+                        {r.status === 'Completed' || r.status === 'Approved' || r.status === 'CheckedIn'
                           ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                           : <XCircle className="h-4 w-4 text-slate-300" />}
                       </div>
