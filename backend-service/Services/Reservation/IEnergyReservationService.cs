@@ -12,4 +12,5 @@ public interface IEnergyReservationService
     Task CancelReservationAsync(string id, string cancelledByUserId);
     Task<DashboardStatsDto> GetDashboardStatsAsync(string nic);
     Task<List<ReservationHistoryDto>> GetHistoryAsync(string nic, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, string? search = null);
+    Task<QrCodeDetailsDto> GenerateOrGetQrCodeAsync(string reservationId);
 }

@@ -64,9 +64,12 @@
             android:exported="false"
             android:label="@string/title_nearby_stations" />
 
-        <!-- Member 4: booking history & telemetry. -->
+        <!-- Member 4: booking history & telemetry & QR passes. -->
         <activity
             android:name=".ui.booking.BookingHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.ReservationQrActivity"
             android:exported="false" />
 
     </application>

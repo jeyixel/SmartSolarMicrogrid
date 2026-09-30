@@ -306,4 +306,34 @@ export const fetchBookingHistory = async (
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// QR Code Operations (/api/reservations/{id}/qr)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface QrCodeDetails {
+  reservationId: string;
+  reservationCode: string;
+  qrCodeToken: string;
+  stationId: string;
+  stationName: string;
+  prosumerNIC: string;
+  prosumerName: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  requestedKWh: number;
+  actionType: string;
+  status: string;
+  generatedAtUtc: string;
+}
+
+export const generateReservationQr = async (reservationId: string): Promise<QrCodeDetails> => {
+  return handleResponse<QrCodeDetails>(
+    await fetch(`${API_BASE_URL}/reservations/${encodeURIComponent(reservationId)}/qr`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+  );
+};
+
+
 

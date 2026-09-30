@@ -252,11 +252,11 @@ public class EnergyReservationService : IEnergyReservationService
 
             // Fetch linked physical slot details for enriched telemetry
             var slot = await _slotRepo.GetByIdAsync(res.SlotId);
-            var slotStart = slot?.StartTime ?? res.CreatedAt;
-            var slotEnd = slot?.EndTime ?? res.CreatedAt.AddHours(1);
-            var stationId = slot?.StationId ?? "N/A";
-            var actionType = slot?.ActionType ?? "Drop-off";
-            var energyAmount = slot?.EnergyAmountKWh ?? 0;
+            var slotStart = res.SlotStartTime != default ? res.SlotStartTime : (slot?.StartTime ?? res.ReservationCreatedAtUtc);
+            var slotEnd = res.SlotEndTime != default ? res.SlotEndTime : (slot?.EndTime ?? res.ReservationCreatedAtUtc.AddHours(1));
+            var stationId = !string.IsNullOrWhiteSpace(res.StationId) ? res.StationId : (slot?.StationId ?? "N/A");
+            var actionType = slot?.TradeType ?? "Charging";
+            var energyAmount = res.RequestedKWh > 0 ? res.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
 
             // Apply date range filters
             if (fromDate.HasValue && slotStart < fromDate.Value)
@@ -273,6 +273,7 @@ public class EnergyReservationService : IEnergyReservationService
             {
                 var query = search.Trim();
                 bool matches = res.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               (!string.IsNullOrEmpty(res.ReservationCode) && res.ReservationCode.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                stationId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                actionType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                res.Status.Contains(query, StringComparison.OrdinalIgnoreCase);
@@ -294,12 +295,64 @@ public class EnergyReservationService : IEnergyReservationService
                 EnergyAmountKWh = energyAmount,
                 ActionType = actionType,
                 Status = res.Status,
-                CreatedAt = res.CreatedAt,
-                UpdatedAt = res.UpdatedAt
+                CreatedAt = res.ReservationCreatedAtUtc,
+                UpdatedAt = res.LastModifiedAtUtc
             });
         }
 
         // Return ordered by newest start time first
         return result.OrderByDescending(x => x.StartTime).ToList();
+    }
+
+    /// <summary>
+    /// Generates or retrieves the dynamic QR verification token for an approved reservation.
+    /// Updates the reservation with the token and timestamp if not already generated.
+    /// </summary>
+    public async Task<QrCodeDetailsDto> GenerateOrGetQrCodeAsync(string reservationId)
+    {
+        var reservation = await _reservationRepo.GetByIdAsync(reservationId);
+        if (reservation == null)
+        {
+            throw new KeyNotFoundException($"Reservation '{reservationId}' not found.");
+        }
+
+        // Generate token if not yet present
+        if (string.IsNullOrWhiteSpace(reservation.QrCodeToken))
+        {
+            var code = !string.IsNullOrWhiteSpace(reservation.ReservationCode) 
+                ? reservation.ReservationCode 
+                : reservation.Id;
+            reservation.QrCodeToken = $"SSM:RES:{code}:{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            reservation.QrCodeGeneratedAtUtc = DateTime.UtcNow;
+            reservation.LastModifiedAtUtc = DateTime.UtcNow;
+
+            await _reservationRepo.UpdateAsync(reservation.Id, reservation);
+        }
+
+        // Retrieve physical slot details to enrich the QR payload
+        var slot = await _slotRepo.GetByIdAsync(reservation.SlotId);
+        var slotStart = reservation.SlotStartTime != default ? reservation.SlotStartTime : (slot?.StartTime ?? reservation.ReservationCreatedAtUtc);
+        var slotEnd = reservation.SlotEndTime != default ? reservation.SlotEndTime : (slot?.EndTime ?? reservation.ReservationCreatedAtUtc.AddHours(1));
+        var stationId = !string.IsNullOrWhiteSpace(reservation.StationId) ? reservation.StationId : (slot?.StationId ?? "N/A");
+        var stationName = !string.IsNullOrWhiteSpace(reservation.StationName) ? reservation.StationName : (slot?.StationName ?? stationId);
+        var actionType = slot?.TradeType ?? "Charging";
+        var energyAmount = reservation.RequestedKWh > 0 ? reservation.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
+
+        return new QrCodeDetailsDto
+        {
+            ReservationId = reservation.Id,
+            ReservationCode = reservation.ReservationCode,
+            QrCodeToken = reservation.QrCodeToken,
+            StationId = stationId,
+            StationName = stationName,
+            ProsumerNIC = reservation.ProsumerNIC,
+            ProsumerName = reservation.ProsumerName,
+            SlotStartTime = slotStart,
+            SlotEndTime = slotEnd,
+            RequestedKWh = energyAmount,
+            ActionType = actionType,
+            Status = reservation.Status,
+            GeneratedAtUtc = reservation.QrCodeGeneratedAtUtc ?? DateTime.UtcNow
+        };
     }
 }

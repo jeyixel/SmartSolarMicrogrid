@@ -81,8 +81,10 @@ class BookingHistoryActivity : AppCompatActivity() {
         layoutEmptyState = findViewById(R.id.layoutEmptyState)
 
         adapter = BookingHistoryAdapter { item ->
-            // Item click interaction (e.g. view booking details or QR)
-            Toast.makeText(this, "Booking #${item.stationId} selected", Toast.LENGTH_SHORT).show()
+            val intent = android.content.Intent(this, ReservationQrActivity::class.java).apply {
+                putExtra(ReservationQrActivity.EXTRA_RESERVATION_ID, item.id)
+            }
+            startActivity(intent)
         }
 
         rvBookingHistory.layoutManager = LinearLayoutManager(this)
