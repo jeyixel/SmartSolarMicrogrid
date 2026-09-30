@@ -180,4 +180,31 @@ public class EnergyReservationController : ControllerBase
         var history = await _reservationService.GetHistoryAsync(nic, status, fromDate, toDate, search);
         return Ok(history);
     }
+
+    /// <summary>
+    /// Generates or retrieves the dynamic QR verification payload for a reservation.
+    /// Used by prosumers to present at the solar station for energy transfer verification.
+    /// </summary>
+    [HttpPost("{id}/qr")]
+    public async Task<ActionResult<QrCodeDetailsDto>> GenerateQrCode(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { error = "Reservation ID parameter cannot be null or empty." });
+        }
+
+        try
+        {
+            var qrDetails = await _reservationService.GenerateOrGetQrCodeAsync(id);
+            return Ok(qrDetails);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
 }

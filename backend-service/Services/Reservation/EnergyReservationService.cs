@@ -303,4 +303,56 @@ public class EnergyReservationService : IEnergyReservationService
         // Return ordered by newest start time first
         return result.OrderByDescending(x => x.StartTime).ToList();
     }
+
+    /// <summary>
+    /// Generates or retrieves the dynamic QR verification token for an approved reservation.
+    /// Updates the reservation with the token and timestamp if not already generated.
+    /// </summary>
+    public async Task<QrCodeDetailsDto> GenerateOrGetQrCodeAsync(string reservationId)
+    {
+        var reservation = await _reservationRepo.GetByIdAsync(reservationId);
+        if (reservation == null)
+        {
+            throw new KeyNotFoundException($"Reservation '{reservationId}' not found.");
+        }
+
+        // Generate token if not yet present
+        if (string.IsNullOrWhiteSpace(reservation.QrCodeToken))
+        {
+            var code = !string.IsNullOrWhiteSpace(reservation.ReservationCode) 
+                ? reservation.ReservationCode 
+                : reservation.Id;
+            reservation.QrCodeToken = $"SSM:RES:{code}:{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            reservation.QrCodeGeneratedAtUtc = DateTime.UtcNow;
+            reservation.LastModifiedAtUtc = DateTime.UtcNow;
+
+            await _reservationRepo.UpdateAsync(reservation.Id, reservation);
+        }
+
+        // Retrieve physical slot details to enrich the QR payload
+        var slot = await _slotRepo.GetByIdAsync(reservation.SlotId);
+        var slotStart = reservation.SlotStartTime != default ? reservation.SlotStartTime : (slot?.StartTime ?? reservation.ReservationCreatedAtUtc);
+        var slotEnd = reservation.SlotEndTime != default ? reservation.SlotEndTime : (slot?.EndTime ?? reservation.ReservationCreatedAtUtc.AddHours(1));
+        var stationId = !string.IsNullOrWhiteSpace(reservation.StationId) ? reservation.StationId : (slot?.StationId ?? "N/A");
+        var stationName = !string.IsNullOrWhiteSpace(reservation.StationName) ? reservation.StationName : (slot?.StationName ?? stationId);
+        var actionType = slot?.TradeType ?? "Charging";
+        var energyAmount = reservation.RequestedKWh > 0 ? reservation.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
+
+        return new QrCodeDetailsDto
+        {
+            ReservationId = reservation.Id,
+            ReservationCode = reservation.ReservationCode,
+            QrCodeToken = reservation.QrCodeToken,
+            StationId = stationId,
+            StationName = stationName,
+            ProsumerNIC = reservation.ProsumerNIC,
+            ProsumerName = reservation.ProsumerName,
+            SlotStartTime = slotStart,
+            SlotEndTime = slotEnd,
+            RequestedKWh = energyAmount,
+            ActionType = actionType,
+            Status = reservation.Status,
+            GeneratedAtUtc = reservation.QrCodeGeneratedAtUtc ?? DateTime.UtcNow
+        };
+    }
 }
