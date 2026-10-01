@@ -215,6 +215,7 @@
 
                                 <TextView
                                     android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
                                     android:layout_marginStart="8dp"
                                     android:layout_marginBottom="6dp"
                                     android:background="@drawable/bg_pill_dark"
@@ -258,6 +259,7 @@
 
                                 <TextView
                                     android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
                                     android:layout_marginStart="8dp"
                                     android:layout_marginBottom="6dp"
                                     android:background="@drawable/bg_pill_review"
