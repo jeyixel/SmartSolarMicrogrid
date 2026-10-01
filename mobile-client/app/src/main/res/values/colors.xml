@@ -19,4 +19,7 @@
     <color name="pill_review_bg">#FFECB3</color>
     <color name="pill_review_text">#F57F17</color>
     <color name="map_placeholder_bg">#B2DFDB</color>
+    <color name="error_red">#C62828</color>
+    <color name="logout_bg">#FFEBEE</color>
+    <color name="logout_border">#FFCDD2</color>
 </resources>
