@@ -30,6 +30,8 @@
         <!-- Member 1: authentication is the entry point of the app. -->
         <activity
             android:name=".ui.auth.LoginActivity"
+            android:theme="@style/Theme.SmartSolarMicrogrid.AuthLight"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,6 +41,7 @@
         </activity>
         <activity
             android:name=".ui.auth.RegisterActivity"
+            android:theme="@style/Theme.SmartSolarMicrogrid.AuthLight"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
@@ -64,9 +67,12 @@
             android:exported="false"
             android:label="@string/title_nearby_stations" />
 
-        <!-- Member 4: booking history & telemetry. -->
+        <!-- Member 4: booking history & telemetry & QR passes. -->
         <activity
             android:name=".ui.booking.BookingHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.ReservationQrActivity"
             android:exported="false" />
 
     </application>

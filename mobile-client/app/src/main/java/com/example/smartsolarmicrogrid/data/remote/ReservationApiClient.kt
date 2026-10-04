@@ -154,6 +154,76 @@ class ReservationApiClient(
         }
     }
 
+    /**
+     * Generates or retrieves the dynamic QR verification payload for a reservation.
+     */
+    fun generateQrCode(
+        reservationId: String,
+        authToken: String? = null,
+        callback: (ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.QrCodeDetailsDto>) -> Unit
+    ) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val encodedId = URLEncoder.encode(reservationId, "UTF-8")
+                val endpointUrl = URL("${baseUrl}api/reservations/$encodedId/qr")
+
+                connection = (endpointUrl.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    doInput = true
+                    setRequestProperty("Accept", "application/json")
+                    if (!authToken.isNullOrBlank()) {
+                        setRequestProperty("Authorization", "Bearer $authToken")
+                    }
+                }
+
+                val responseCode = connection.responseCode
+                val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                val responseBody = readStream(stream)
+
+                Log.d(TAG, "generateQrCode status: $responseCode, response: $responseBody")
+
+                val result: ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.QrCodeDetailsDto> = when (responseCode) {
+                    200 -> {
+                        val json = JSONObject(responseBody)
+                        val dto = com.example.smartsolarmicrogrid.data.remote.dto.QrCodeDetailsDto(
+                            reservationId = json.optString("reservationId", reservationId),
+                            reservationCode = json.optString("reservationCode", ""),
+                            qrCodeToken = json.optString("qrCodeToken", ""),
+                            stationId = json.optString("stationId", "N/A"),
+                            stationName = json.optString("stationName", ""),
+                            prosumerNIC = json.optString("prosumerNIC", ""),
+                            prosumerName = json.optString("prosumerName", ""),
+                            slotStartTime = json.optString("slotStartTime", ""),
+                            slotEndTime = json.optString("slotEndTime", ""),
+                            requestedKWh = json.optDouble("requestedKWh", 0.0),
+                            actionType = json.optString("actionType", "Charging"),
+                            status = json.optString("status", "Pending"),
+                            generatedAtUtc = json.optString("generatedAtUtc", "")
+                        )
+                        ApiResponse.Success(dto, responseCode)
+                    }
+                    in 400..499 -> {
+                        val message = parseErrorMessage(responseBody) ?: "Unable to generate QR code."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    else -> {
+                        val message = parseErrorMessage(responseBody) ?: "Server error occurred ($responseCode)."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                }
+                postResult(result, callback)
+            } catch (e: Exception) {
+                Log.e(TAG, "Network failure in generateQrCode", e)
+                postResult(ApiResponse.NetworkFailure(e), callback)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
     private fun readStream(stream: InputStream?): String {
         if (stream == null) return ""
         return BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { reader ->
