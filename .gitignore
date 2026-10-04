@@ -41,6 +41,7 @@ captures/
 *.jks
 google-services.json
 .cxx/
+.kotlin/
 
 # IDE
 .idea/
