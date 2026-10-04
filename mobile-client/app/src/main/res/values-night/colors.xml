@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Semantic color roles - DARK theme.
+    Must define exactly the same names as values/colors.xml.
+-->
+<resources>
+    <!-- Screen & containers -->
+    <color name="color_background">@color/palette_dark_950</color>
+    <color name="color_surface">@color/palette_dark_900</color>
+    <color name="color_surface_variant">@color/palette_dark_800</color>
+    <color name="color_outline">@color/palette_dark_700</color>
+
+    <!-- Text -->
+    <color name="text_primary">@color/palette_dark_text</color>
+    <color name="text_secondary">@color/palette_dark_text_secondary</color>
+
+    <!-- Primary: lighter green so it stays readable on dark surfaces -->
+    <color name="color_primary">@color/palette_green_300</color>
+    <color name="color_on_primary">@color/palette_green_950</color>
+    <color name="color_primary_container">@color/palette_green_tint_dark</color>
+    <color name="color_on_primary_container">@color/palette_green_200</color>
+
+    <!-- Brand surfaces stay deep green; content on them stays light -->
+    <color name="color_brand">@color/palette_green_900</color>
+    <color name="color_brand_variant">@color/palette_green_800</color>
+    <color name="color_on_brand">@color/palette_white</color>
+    <color name="color_on_brand_subtle">@color/palette_white_80</color>
+    <color name="color_on_brand_muted">@color/palette_white_70</color>
+    <color name="color_on_brand_accent">@color/palette_green_200</color>
+    <color name="color_on_brand_warning">@color/palette_amber_100</color>
+    <color name="color_brand_stroke">@color/palette_white_20</color>
+    <color name="color_brand_pill">@color/palette_white_15</color>
+    <color name="color_brand_overlay">@color/palette_white_12</color>
+
+    <!-- Secondary accent -->
+    <color name="color_accent">@color/palette_teal_300</color>
+    <color name="color_map_card_start">@color/palette_teal_tint_dark</color>
+    <color name="color_map_card_end">@color/palette_teal_tint_dark_2</color>
+
+    <!-- Status -->
+    <color name="color_warning">@color/palette_amber_300</color>
+    <color name="color_warning_container">@color/palette_amber_tint_dark</color>
+    <color name="color_on_warning_container">@color/palette_amber_300</color>
+    <color name="color_error">@color/palette_red_300</color>
+    <color name="color_on_error">@color/palette_green_950</color>
+    <color name="color_error_container">@color/palette_red_tint_dark</color>
+    <color name="color_error_outline">@color/palette_red_outline_dark</color>
+</resources>
