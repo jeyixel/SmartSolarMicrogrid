@@ -30,6 +30,8 @@
         <!-- Member 1: authentication is the entry point of the app. -->
         <activity
             android:name=".ui.auth.LoginActivity"
+            android:theme="@style/Theme.SmartSolarMicrogrid.AuthLight"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,6 +41,7 @@
         </activity>
         <activity
             android:name=".ui.auth.RegisterActivity"
+            android:theme="@style/Theme.SmartSolarMicrogrid.AuthLight"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity

@@ -8,7 +8,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import com.example.smartsolarmicrogrid.R
@@ -61,6 +63,10 @@ class LoginActivity : AppCompatActivity() {
         ApiConfig.init(this)
         authApiClient = AuthApiClient(ApiConfig.getBaseUrl())
         enableEdgeToEdge()
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
         setContentView(R.layout.activity_login)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.loginScrollRoot)) { v, insets ->
@@ -140,6 +146,8 @@ class LoginActivity : AppCompatActivity() {
     private fun showCustomUrlDialog() {
         val input = android.widget.EditText(this).apply {
             setText(ApiConfig.getBaseUrl())
+            setTextColor(ContextCompat.getColor(this@LoginActivity, R.color.text_primary))
+            setHintTextColor(ContextCompat.getColor(this@LoginActivity, R.color.text_secondary))
             setSelection(text.length)
         }
         val container = android.widget.FrameLayout(this).apply {
