@@ -6,34 +6,46 @@
     android:id="@+id/nearbyStationsRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/solar_bg_light">
+    android:background="@color/color_background">
 
     <!-- Top App Bar -->
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
+    <LinearLayout
+        android:id="@+id/topBar"
+        style="@style/Widget.App.TopBar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/topToolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/white"
-            app:title="@string/title_nearby_stations"
-            app:titleTextColor="@color/text_primary"
-            app:navigationIcon="?attr/homeAsUpIndicator"
-            app:navigationIconTint="@color/text_primary" />
-    </com.google.android.material.appbar.AppBarLayout>
+        <ImageButton
+            android:id="@+id/btnBack"
+            style="@style/Widget.App.TopBar.Button"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back" />
+
+        <TextView
+            style="@style/Widget.App.TopBar.Title"
+            android:text="Nearby Solar Stations" />
+
+        <ImageButton
+            android:id="@+id/btnRefreshStations"
+            style="@style/Widget.App.TopBar.Button"
+            android:src="@drawable/ic_refresh"
+            android:contentDescription="Refresh stations" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/topDivider"
+        style="@style/Widget.App.TopBar.Divider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/mapFragment"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+        app:layout_constraintTop_toBottomOf="@id/topDivider"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -43,7 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+        app:layout_constraintTop_toBottomOf="@id/topDivider"
         app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -58,7 +70,7 @@
         android:visibility="gone"
         app:cardCornerRadius="12dp"
         app:cardElevation="6dp"
-        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+        app:layout_constraintTop_toBottomOf="@id/topDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible">
@@ -103,10 +115,10 @@
         android:id="@+id/bottomNavigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/color_surface"
         app:elevation="16dp"
-        app:itemIconTint="@color/solar_green_primary"
-        app:itemTextColor="@color/solar_green_primary"
+        app:itemIconTint="@color/color_primary"
+        app:itemTextColor="@color/color_primary"
         app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
         app:menu="@menu/bottom_nav_prosumer"
         app:labelVisibilityMode="labeled"
