@@ -95,4 +95,9 @@
         <item quantity="one">%1$d slot free</item>
         <item quantity="other">%1$d slots free</item>
     </plurals>
+
+    <!-- Profile & Session Strings -->
+    <string name="action_logout">Log Out</string>
+    <string name="dialog_logout_title">Confirm Logout</string>
+    <string name="dialog_logout_message">Are you sure you want to log out of your account?</string>
 </resources>

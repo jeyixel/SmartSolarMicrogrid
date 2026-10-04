@@ -1,3 +1,4 @@
+using backend_service.DTOs;
 using backend_service.Models;
 using backend_service.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -138,6 +139,72 @@ public class EnergyReservationController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message, rule = "12HourRule" });
+        }
+    }
+
+    /// <summary>
+    /// Returns live dashboard statistics (pending count, upcoming approved count, total bookings) for a prosumer by NIC.
+    /// </summary>
+    [HttpGet("dashboard/{nic}")]
+    public async Task<ActionResult<DashboardStatsDto>> GetDashboardStats(string nic)
+    {
+        // Validate incoming prosumer NIC parameter
+        if (string.IsNullOrWhiteSpace(nic))
+        {
+            return BadRequest(new { error = "Prosumer NIC parameter cannot be null or empty." });
+        }
+
+        // Delegate statistics aggregation to the reservation service
+        var stats = await _reservationService.GetDashboardStatsAsync(nic);
+        return Ok(stats);
+    }
+
+    /// <summary>
+    /// Retrieves prosumer booking history with optional filtering by status, date range, and search text.
+    /// </summary>
+    [HttpGet("history/{nic}")]
+    public async Task<ActionResult<List<ReservationHistoryDto>>> GetBookingHistory(
+        string nic,
+        [FromQuery] string? status = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] string? search = null)
+    {
+        // Validate incoming prosumer NIC parameter
+        if (string.IsNullOrWhiteSpace(nic))
+        {
+            return BadRequest(new { error = "Prosumer NIC parameter cannot be null or empty." });
+        }
+
+        // Delegate query execution and filtering to the reservation service
+        var history = await _reservationService.GetHistoryAsync(nic, status, fromDate, toDate, search);
+        return Ok(history);
+    }
+
+    /// <summary>
+    /// Generates or retrieves the dynamic QR verification payload for a reservation.
+    /// Used by prosumers to present at the solar station for energy transfer verification.
+    /// </summary>
+    [HttpPost("{id}/qr")]
+    public async Task<ActionResult<QrCodeDetailsDto>> GenerateQrCode(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { error = "Reservation ID parameter cannot be null or empty." });
+        }
+
+        try
+        {
+            var qrDetails = await _reservationService.GenerateOrGetQrCodeAsync(id);
+            return Ok(qrDetails);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
         }
     }
 }

@@ -247,3 +247,93 @@ export const fetchStation = async (id: string): Promise<SolarStation> => {
     })
   );
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dashboard Statistics (/api/reservations/dashboard/{nic})
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DashboardStats {
+  pendingCount: number;
+  upcomingApprovedCount: number;
+  totalBookingsCount: number;
+}
+
+export const fetchDashboardStats = async (nic: string): Promise<DashboardStats> => {
+  return handleResponse<DashboardStats>(
+    await fetch(`${API_BASE_URL}/reservations/dashboard/${encodeURIComponent(nic)}`)
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Booking History & Filtering (/api/reservations/history/{nic})
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ReservationHistoryItem {
+  id: string;
+  prosumerNIC: string;
+  slotId: string;
+  stationId: string;
+  startTime: string;
+  endTime: string;
+  energyAmountKWh: number;
+  actionType: 'Drop-off' | 'Charge';
+  status: 'Pending' | 'Approved' | 'Completed' | 'Cancelled';
+  qrToken?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HistoryFilterParams {
+  status?: string;
+  fromDate?: string;
+  toDate?: string;
+  search?: string;
+}
+
+export const fetchBookingHistory = async (
+  nic: string,
+  filters: HistoryFilterParams = {}
+): Promise<ReservationHistoryItem[]> => {
+  const query = new URLSearchParams();
+  if (filters.status && filters.status !== 'All') query.set('status', filters.status);
+  if (filters.fromDate) query.set('fromDate', filters.fromDate);
+  if (filters.toDate) query.set('toDate', filters.toDate);
+  if (filters.search) query.set('search', filters.search);
+
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return handleResponse<ReservationHistoryItem[]>(
+    await fetch(`${API_BASE_URL}/reservations/history/${encodeURIComponent(nic)}${queryString}`)
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QR Code Operations (/api/reservations/{id}/qr)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface QrCodeDetails {
+  reservationId: string;
+  reservationCode: string;
+  qrCodeToken: string;
+  stationId: string;
+  stationName: string;
+  prosumerNIC: string;
+  prosumerName: string;
+  slotStartTime: string;
+  slotEndTime: string;
+  requestedKWh: number;
+  actionType: string;
+  status: string;
+  generatedAtUtc: string;
+}
+
+export const generateReservationQr = async (reservationId: string): Promise<QrCodeDetails> => {
+  return handleResponse<QrCodeDetails>(
+    await fetch(`${API_BASE_URL}/reservations/${encodeURIComponent(reservationId)}/qr`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+  );
+};
+
+
+

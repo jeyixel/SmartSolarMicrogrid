@@ -20,6 +20,7 @@ import { StationListPage } from '../pages/StationListPage';
 import { StationFormPage } from '../pages/StationFormPage';
 import { StationDetailPage } from '../pages/StationDetailPage';
 import { OperatorDashboardPage } from '../pages/operator/OperatorDashboardPage';
+import { BookingHistoryPage } from '../pages/reservation/BookingHistoryPage';
 
 function Placeholder({ title }: { title: string }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -101,6 +102,7 @@ export default function AppRoutes() {
         >
           <Route path="/operator/dashboard" element={<OperatorDashboardPage />} />
           <Route path="/operator/reservations" element={<ReservationDashboard />} />
+          <Route path="/operator/history" element={<BookingHistoryPage />} />
           <Route path="/operator/stations" element={<StationScheduleManager />} />
           <Route path="/operator/slots" element={<GridOperatorView />} />
         </Route>
