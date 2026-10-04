@@ -23,16 +23,22 @@ import com.example.smartsolarmicrogrid.databinding.ActivityNearbyStationsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import android.webkit.JavascriptInterface
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Toast
 import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Marker
 import kotlinx.coroutines.launch
+import com.google.android.gms.maps.MapsInitializer
+import com.google.android.gms.maps.MapsInitializer.Renderer
 import java.util.Calendar
 import java.util.Locale
 
@@ -43,12 +49,13 @@ import java.util.Locale
  * location permission, set up the map, draw markers, and render whatever state
  * the ViewModel publishes. It performs no networking itself.
  */
-class NearbyStationsActivity : AppCompatActivity() {
+class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var binding: ActivityNearbyStationsBinding
     private val viewModel: NearbyStationsViewModel by viewModels()
 
-    private lateinit var webView: WebView
+    private var mMap: GoogleMap? = null
+    private val markers = mutableMapOf<String, Marker>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     /** Last point the station list was requested for; reused by Retry. */
@@ -68,6 +75,7 @@ class NearbyStationsActivity : AppCompatActivity() {
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
         if (granted) {
+            enableMyLocationLayer()
             moveToCurrentLocationAndLoad()
         } else {
             showMessage(getString(R.string.msg_permission_denied))
@@ -78,31 +86,20 @@ class NearbyStationsActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Force the Maps SDK to use the Legacy Renderer to bypass the SecurityException
+        // in policy_maps_core_dynamite on certain devices/Play Services versions.
+        MapsInitializer.initialize(this, Renderer.LEGACY, null)
+
         binding = ActivityNearbyStationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         ApiClient.init(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        webView = binding.mapWebView
-        webView.settings.javaScriptEnabled = true
-        webView.addJavascriptInterface(WebAppInterface(), "Android")
-        
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-                mapLoaded = true
-                if (!viewModel.hasLoadedOnce) {
-                    requestLocationOrFallback()
-                } else {
-                    updateMapCenter(lastQueriedLocationLat, lastQueriedLocationLng)
-                    (viewModel.uiState.value as? StationsUiState.Success)?.let {
-                        drawMarkers(it.stations)
-                    }
-                }
-            }
-        }
-        webView.loadUrl("file:///android_asset/leaflet_map.html")
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.mapFragment) as SupportMapFragment
+        mapFragment.getMapAsync(this)
 
         binding.retryButton.setOnClickListener {
             hideMessage()
@@ -170,11 +167,26 @@ class NearbyStationsActivity : AppCompatActivity() {
         }
     }
 
-    inner class WebAppInterface {
-        @JavascriptInterface
-        fun onMarkerClick(stationId: String) {
-            runOnUiThread {
+    override fun onMapReady(googleMap: GoogleMap) {
+        mMap = googleMap
+        mapLoaded = true
+
+        mMap?.setOnMarkerClickListener { marker ->
+            val stationId = marker.tag as? String
+            if (stationId != null) {
                 viewModel.loadStationDetails(stationId)
+            }
+            false // Return false so the default behavior (centering the marker and opening info window) still occurs
+        }
+
+        enableMyLocationLayer()
+
+        if (!viewModel.hasLoadedOnce) {
+            requestLocationOrFallback()
+        } else {
+            updateMapCenter(lastQueriedLocationLat, lastQueriedLocationLng)
+            (viewModel.uiState.value as? StationsUiState.Success)?.let {
+                drawMarkers(it.stations)
             }
         }
     }
@@ -188,6 +200,19 @@ class NearbyStationsActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Shows the user's position as the blue "my location" dot, plus the map's
+     * recenter button. Safe to call repeatedly; it no-ops until both the map is
+     * ready and a location permission has been granted.
+     */
+    @SuppressLint("MissingPermission")
+    private fun enableMyLocationLayer() {
+        val map = mMap ?: return
+        if (!hasLocationPermission()) return
+        map.isMyLocationEnabled = true
+        map.uiSettings.isMyLocationButtonEnabled = true
+    }
 
     private fun requestLocationOrFallback() {
         if (hasLocationPermission()) {
@@ -209,10 +234,17 @@ class NearbyStationsActivity : AppCompatActivity() {
             return
         }
 
-        fusedLocationClient.getCurrentLocation(
-            Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-            null
-        ).addOnSuccessListener { location ->
+        // Use GPS when precise location was granted; Android 12+ users may grant approximate only
+        val priority = if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+
+        fusedLocationClient.getCurrentLocation(priority, null).addOnSuccessListener { location ->
             if (location == null) {
                 showMessage(getString(R.string.msg_location_unavailable))
                 loadStationsAround(6.9271, 79.8612)
@@ -235,7 +267,7 @@ class NearbyStationsActivity : AppCompatActivity() {
 
     private fun updateMapCenter(lat: Double, lng: Double) {
         if (!mapLoaded) return
-        webView.evaluateJavascript("javascript:setCenter($lat, $lng, 12);", null)
+        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 12f))
     }
 
     // -- State rendering -----------------------------------------------------
@@ -288,19 +320,32 @@ class NearbyStationsActivity : AppCompatActivity() {
             val lat = station.latitude ?: return@forEach
             val lng = station.longitude ?: return@forEach
             
-            val nameEscaped = station.name.replace("'", "\\'")
             val isActive = station.isOpenNow == true
             
-            webView.evaluateJavascript(
-                "javascript:addMarker('${station.id}', $lat, $lng, '$nameEscaped', $isActive);", 
-                null
+            val markerColor = if (isActive) {
+                BitmapDescriptorFactory.HUE_GREEN
+            } else {
+                BitmapDescriptorFactory.HUE_ORANGE
+            }
+
+            val marker = mMap?.addMarker(
+                MarkerOptions()
+                    .position(LatLng(lat, lng))
+                    .title(station.name)
+                    .icon(BitmapDescriptorFactory.defaultMarker(markerColor))
             )
+            
+            if (marker != null) {
+                marker.tag = station.id
+                markers[station.id] = marker
+            }
         }
     }
 
     private fun clearMarkers() {
         if (!mapLoaded) return
-        webView.evaluateJavascript("javascript:clearMarkers();", null)
+        mMap?.clear()
+        markers.clear()
     }
 
     private fun renderDetails(state: StationDetailUiState) {
