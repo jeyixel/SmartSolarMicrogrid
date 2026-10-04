@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, BatteryCharging, Loader2, Minus, Phone, Plus, Save } from 'lucide-react';
 
 import { ApiError, stationsApi } from '@/api/client';
 import type { CreateStationRequest, ScheduleEntry, UpdateStationRequest } from '@/api/types';
@@ -60,12 +60,11 @@ export function StationFormPage() {
   const isEdit = Boolean(id);
 
   /**
-   * The API enforces this exact split server-side (StationService's
-   * FindRestrictedFieldChanges): a Grid Operator editing a station may change
-   * only available battery slots, contact phone and the operational schedule.
-   * Everything else is disabled here so a Grid Operator never fills in a
-   * field the request will then be rejected for - the restriction is shown up
-   * front rather than discovered after a failed submit.
+   * Backoffice edits every field. A Grid Operator gets a separate, shorter
+   * form showing only what they may change - available battery slots and the
+   * contact phone - so they never see fields they cannot use. The other values
+   * are still loaded and resubmitted unchanged, which the API's
+   * FindRestrictedFieldChanges check accepts.
    */
   const canEditFullDetails = isBackoffice;
 
@@ -147,47 +146,50 @@ export function StationFormPage() {
       }
     }
 
-    const name = form.name.trim();
-    if (!name) {
-      errors.name = 'Name is required.';
-    } else if (name.length < 3 || name.length > 100) {
-      errors.name = 'Name must be between 3 and 100 characters.';
-    }
-
-    const lat = toFiniteNumber(form.latitude);
-    if (lat === null) {
-      errors.latitude = 'Latitude is required.';
-    } else if (lat < -90 || lat > 90) {
-      errors.latitude = 'Latitude must be between -90 and 90.';
-    }
-
-    const lng = toFiniteNumber(form.longitude);
-    if (lng === null) {
-      errors.longitude = 'Longitude is required.';
-    } else if (lng < -180 || lng > 180) {
-      errors.longitude = 'Longitude must be between -180 and 180.';
-    }
-
-    // The API rejects (0, 0) as an unset position rather than as a point in the
-    // Gulf of Guinea, so say that here rather than letting the save fail.
-    if (lat === 0 && lng === 0) {
-      errors.latitude = 'Set the station position — (0, 0) is not a valid location.';
-    }
-
-    const capacity = toFiniteNumber(form.capacityKWh);
-    if (capacity === null) {
-      errors.capacityKWh = 'Capacity is required.';
-    } else if (capacity <= 0) {
-      errors.capacityKWh = 'Capacity must be greater than 0.';
-    } else if (capacity > 100000) {
-      errors.capacityKWh = 'Capacity must be at most 100000 kWh.';
-    }
-
     const total = toFiniteNumber(form.totalBatterySlots);
-    if (total === null) {
-      errors.totalBatterySlots = 'Total battery slots is required.';
-    } else if (!Number.isInteger(total) || total < 1 || total > 1000) {
-      errors.totalBatterySlots = 'Total battery slots must be a whole number between 1 and 1000.';
+
+    if (canEditFullDetails) {
+      const name = form.name.trim();
+      if (!name) {
+        errors.name = 'Name is required.';
+      } else if (name.length < 3 || name.length > 100) {
+        errors.name = 'Name must be between 3 and 100 characters.';
+      }
+
+      const lat = toFiniteNumber(form.latitude);
+      if (lat === null) {
+        errors.latitude = 'Latitude is required.';
+      } else if (lat < -90 || lat > 90) {
+        errors.latitude = 'Latitude must be between -90 and 90.';
+      }
+
+      const lng = toFiniteNumber(form.longitude);
+      if (lng === null) {
+        errors.longitude = 'Longitude is required.';
+      } else if (lng < -180 || lng > 180) {
+        errors.longitude = 'Longitude must be between -180 and 180.';
+      }
+
+      // The API rejects (0, 0) as an unset position rather than as a point in the
+      // Gulf of Guinea, so say that here rather than letting the save fail.
+      if (lat === 0 && lng === 0) {
+        errors.latitude = 'Set the station position — (0, 0) is not a valid location.';
+      }
+
+      const capacity = toFiniteNumber(form.capacityKWh);
+      if (capacity === null) {
+        errors.capacityKWh = 'Capacity is required.';
+      } else if (capacity <= 0) {
+        errors.capacityKWh = 'Capacity must be greater than 0.';
+      } else if (capacity > 100000) {
+        errors.capacityKWh = 'Capacity must be at most 100000 kWh.';
+      }
+
+      if (total === null) {
+        errors.totalBatterySlots = 'Total battery slots is required.';
+      } else if (!Number.isInteger(total) || total < 1 || total > 1000) {
+        errors.totalBatterySlots = 'Total battery slots must be a whole number between 1 and 1000.';
+      }
     }
 
     const available = toFiniteNumber(form.availableBatterySlots);
@@ -304,6 +306,117 @@ export function StationFormPage() {
     );
   }
 
+  if (isEdit && !canEditFullDetails) {
+    const total = toFiniteNumber(form.totalBatterySlots) ?? 0;
+    const available = toFiniteNumber(form.availableBatterySlots) ?? 0;
+    const stepAvailable = (delta: number) =>
+      set('availableBatterySlots', String(Math.min(total, Math.max(0, available + delta))));
+
+    return (
+      <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-6" noValidate>
+        <div className="flex items-center gap-3">
+          <Button type="button" variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="sr-only">Back</span>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Update {form.name}</h1>
+            <p className="text-sm text-muted-foreground">
+              {form.stationCode} · Update battery slot availability and the contact phone.
+            </p>
+          </div>
+        </div>
+
+        {Boolean(submitError) && <ErrorAlert error={submitError} />}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BatteryCharging className="h-4 w-4" aria-hidden="true" />
+              Battery slot availability
+            </CardTitle>
+            <CardDescription>How many battery bays are free right now.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Field
+              id="availableBatterySlots"
+              label="Available slots"
+              required
+              error={localErrors.availableBatterySlots}
+              hint={`Out of ${total} total slots.`}
+            >
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => stepAvailable(-1)}
+                  disabled={available <= 0}
+                  aria-label="One fewer free slot"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  id="availableBatterySlots"
+                  inputMode="numeric"
+                  className="w-24 text-center tabular-nums"
+                  value={form.availableBatterySlots}
+                  aria-invalid={Boolean(localErrors.availableBatterySlots)}
+                  onChange={(event) => set('availableBatterySlots', event.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => stepAvailable(1)}
+                  disabled={available >= total}
+                  aria-label="One more free slot"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">/ {total}</span>
+              </div>
+            </Field>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-4 w-4" aria-hidden="true" />
+              Contact
+            </CardTitle>
+            <CardDescription>Shown to prosumers in the mobile app.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Field id="contactPhone" label="Contact phone" error={localErrors.contactPhone}>
+              <Input
+                id="contactPhone"
+                value={form.contactPhone}
+                onChange={(event) => set('contactPhone', event.target.value)}
+                placeholder="+94112345678"
+              />
+            </Field>
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => navigate(-1)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Save className="h-4 w-4" aria-hidden="true" />
+            )}
+            Save changes
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="flex items-center gap-3">
@@ -326,14 +439,6 @@ export function StationFormPage() {
       </div>
 
       {Boolean(submitError) && <ErrorAlert error={submitError} />}
-
-      {isEdit && !canEditFullDetails && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-300">
-          As Grid Operator you may update <strong>available battery slots</strong>,{' '}
-          <strong>contact phone</strong> and the <strong>operating schedule</strong>. Every
-          other field is set by Backoffice and shown here read-only.
-        </div>
-      )}
 
       <Card>
         <CardHeader>

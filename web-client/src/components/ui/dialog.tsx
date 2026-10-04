@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -34,7 +35,9 @@ export const Dialog: React.FC<DialogProps> = ({
 
   if (!open) return null;
 
-  return (
+  // Rendered on <body> so the backdrop covers the whole viewport, including the
+  // sticky header and sidebar, whatever layout the dialog is opened from.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Scrim / Backdrop */}
       <div
@@ -81,6 +84,7 @@ export const Dialog: React.FC<DialogProps> = ({
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

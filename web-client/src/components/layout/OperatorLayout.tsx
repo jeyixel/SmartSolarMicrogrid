@@ -95,7 +95,7 @@ export default function OperatorLayout() {
               <Sun className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold">SmartSolar</span>
+              <span className="block text-sm font-semibold">GridPulse</span>
               <span className="block text-xs font-normal text-emerald-400">Grid Operator</span>
             </div>
           </Link>
@@ -193,7 +193,7 @@ export default function OperatorLayout() {
         </header>
 
         {/* Page Content View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-screen-2xl w-full mx-auto">
           <Outlet />
         </main>
       </div>

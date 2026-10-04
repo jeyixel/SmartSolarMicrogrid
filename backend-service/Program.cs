@@ -156,7 +156,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Smart Solar Microgrid API",
+        Title = "GridPulse API",
         Version = "v1"
     });
 
@@ -267,7 +267,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Smart Solar Microgrid API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "GridPulse API v1");
     });
 
     using (var scope = app.Services.CreateScope())

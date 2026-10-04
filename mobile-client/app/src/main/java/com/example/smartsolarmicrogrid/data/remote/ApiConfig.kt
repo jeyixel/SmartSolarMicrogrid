@@ -4,7 +4,7 @@ import android.content.Context
 import com.example.smartsolarmicrogrid.BuildConfig
 
 /**
- * Centralized API network configuration for Smart Solar Microgrid.
+ * Centralized API network configuration for GridPulse.
  *
  * Networking Environments:
  * - AVD_KESTREL (Default for local testing):

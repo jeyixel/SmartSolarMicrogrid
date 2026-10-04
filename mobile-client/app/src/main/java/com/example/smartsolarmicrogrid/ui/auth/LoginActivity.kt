@@ -31,7 +31,7 @@ import com.google.android.material.textfield.TextInputLayout
 import java.util.concurrent.Executors
 
 /**
- * Entry-point Login activity for the Smart Solar Microgrid mobile application.
+ * Entry-point Login activity for the GridPulse mobile application.
  *
  * Startup & Remembered Login Handshake:
  * 1. Read local cached row with readSessionResult().

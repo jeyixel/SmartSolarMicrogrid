@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">SmartSolarMicrogrid</string>
+    <string name="app_name">GridPulse</string>
 
     <!-- ===== Member 1: Authentication ===== -->
-    <string name="login_title">Smart Solar Microgrid</string>
+    <string name="login_title">GridPulse</string>
     <string name="login_subtitle">Sign in to manage and monitor microgrid operations</string>
     <string name="login_identifier_hint">Email or NIC</string>
     <string name="login_identifier_helper">Enter your registered email address or NIC</string>
@@ -54,7 +54,7 @@
     <string name="reg_success_status_pending">Account Status: Pending Approval</string>
     <string name="reg_go_to_login">Go to Login</string>
     <string name="network_error_title">Connection Error</string>
-    <string name="network_error_msg">Unable to reach the Smart Solar Microgrid API server. Please check your network connection and server status.</string>
+    <string name="network_error_msg">Unable to reach the GridPulse server. Please check your network connection and server status.</string>
     <string name="retry">Retry</string>
     <string name="cancel">Cancel</string>
     <string name="dismiss">Dismiss</string>
