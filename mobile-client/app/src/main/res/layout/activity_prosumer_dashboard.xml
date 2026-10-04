@@ -6,7 +6,7 @@
     android:id="@+id/prosumerDashboardRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/solar_bg_light"
+    android:background="@color/color_background"
     tools:context=".ui.dashboard.ProsumerDashboardActivity">
 
     <!-- Top App Bar -->
@@ -29,7 +29,7 @@
             android:background="@drawable/bg_avatar_circle"
             android:src="@drawable/ic_bolt"
             android:importantForAccessibility="no"
-            app:tint="@color/solar_green_light" />
+            app:tint="@color/color_on_brand_accent" />
 
         <TextView
             android:layout_width="0dp"
@@ -84,7 +84,7 @@
                     android:layout_height="48dp"
                     android:background="@drawable/bg_avatar_circle"
                     android:gravity="center"
-                    android:textColor="@color/white"
+                    android:textColor="@color/color_on_brand"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:importantForAccessibility="no"
@@ -147,7 +147,7 @@
                         android:layout_height="20dp"
                         android:src="@drawable/ic_bolt"
                         android:importantForAccessibility="no"
-                        app:tint="@color/solar_green_light" />
+                        app:tint="@color/color_on_brand_accent" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -155,7 +155,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:text="Energy Overview"
-                        android:textColor="@color/white"
+                        android:textColor="@color/color_on_brand"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
@@ -167,7 +167,7 @@
                         android:paddingHorizontal="10dp"
                         android:paddingVertical="4dp"
                         android:text="Syncing…"
-                        android:textColor="@color/solar_green_light"
+                        android:textColor="@color/color_on_brand_accent"
                         android:textSize="11sp"
                         tools:text="● Updated 15:54" />
                 </LinearLayout>
@@ -237,11 +237,11 @@
                     android:layout_marginTop="20dp"
                     android:clickable="true"
                     android:focusable="true"
-                    app:cardBackgroundColor="#1FFFFFFF"
+                    app:cardBackgroundColor="@color/color_brand_overlay"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:rippleColor="#33FFFFFF"
-                    app:strokeColor="#33FFFFFF"
+                    app:rippleColor="@color/color_brand_stroke"
+                    app:strokeColor="@color/color_brand_stroke"
                     app:strokeWidth="1dp">
 
                     <!-- Populated state: shown when an upcoming reservation exists -->
@@ -266,7 +266,7 @@
                                 android:layout_weight="1"
                                 android:text="NEXT ENERGY TRANSFER"
                                 android:letterSpacing="0.06"
-                                android:textColor="@color/solar_green_light"
+                                android:textColor="@color/color_on_brand_accent"
                                 android:textSize="11sp"
                                 android:textStyle="bold" />
 
@@ -277,7 +277,7 @@
                                 android:background="@drawable/bg_pill_active"
                                 android:paddingHorizontal="8dp"
                                 android:paddingVertical="2dp"
-                                android:textColor="@color/pill_active_text"
+                                android:textColor="@color/color_on_primary_container"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 tools:text="APPROVED" />
@@ -290,7 +290,7 @@
                             android:layout_marginTop="8dp"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:textColor="@color/white"
+                            android:textColor="@color/color_on_brand"
                             android:textSize="17sp"
                             android:textStyle="bold"
                             tools:text="Tangalle Solar Hub" />
@@ -302,10 +302,10 @@
                             android:layout_marginTop="4dp"
                             android:drawablePadding="6dp"
                             android:gravity="center_vertical"
-                            android:textColor="#CCFFFFFF"
+                            android:textColor="@color/color_on_brand_subtle"
                             android:textSize="13sp"
                             app:drawableStartCompat="@drawable/ic_schedule"
-                            app:drawableTint="#CCFFFFFF"
+                            app:drawableTint="@color/color_on_brand_subtle"
                             tools:text="Tomorrow • 10:30 – 11:30" />
 
                         <LinearLayout
@@ -320,7 +320,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:textColor="@color/solar_green_light"
+                                android:textColor="@color/color_on_brand_accent"
                                 android:textSize="13sp"
                                 tools:text="5.0 kWh • Charging" />
 
@@ -331,11 +331,11 @@
                                 android:drawablePadding="2dp"
                                 android:gravity="center_vertical"
                                 android:text="Show QR"
-                                android:textColor="@color/white"
+                                android:textColor="@color/color_on_brand"
                                 android:textSize="13sp"
                                 android:textStyle="bold"
                                 app:drawableEndCompat="@drawable/ic_chevron_right"
-                                app:drawableTint="@color/white" />
+                                app:drawableTint="@color/color_on_brand" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -359,7 +359,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="No upcoming transfers"
-                                android:textColor="@color/white"
+                                android:textColor="@color/color_on_brand"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
 
@@ -369,7 +369,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:text="Find a nearby station and reserve a slot."
-                                android:textColor="#B3FFFFFF"
+                                android:textColor="@color/color_on_brand_muted"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
@@ -379,12 +379,12 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
                             android:text="Book"
-                            android:textColor="@color/solar_green_primary"
-                            app:backgroundTint="@color/white"
+                            android:textColor="@color/color_brand"
+                            app:backgroundTint="@color/color_on_brand"
                             app:cornerRadius="12dp"
                             app:icon="@drawable/ic_add_circle"
                             app:iconSize="18dp"
-                            app:iconTint="@color/solar_green_primary" />
+                            app:iconTint="@color/color_brand" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
@@ -474,13 +474,13 @@
                     android:background="?attr/selectableItemBackground"
                     android:drawablePadding="2dp"
                     android:text="See map"
-                    android:textColor="@color/solar_teal"
+                    android:textColor="@color/color_accent"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:clickable="true"
                     android:focusable="true"
                     app:drawableEndCompat="@drawable/ic_chevron_right"
-                    app:drawableTint="@color/solar_teal" />
+                    app:drawableTint="@color/color_accent" />
             </LinearLayout>
 
             <!-- Map entry card -->
@@ -509,7 +509,7 @@
                         android:background="@drawable/bg_avatar_circle"
                         android:src="@drawable/ic_map_outline"
                         android:importantForAccessibility="no"
-                        app:tint="@color/white" />
+                        app:tint="@color/color_on_brand" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -522,7 +522,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Explore stations near you"
-                            android:textColor="@color/solar_green_primary"
+                            android:textColor="@color/color_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
 
@@ -531,7 +531,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:text="See live slot availability on the map"
-                            android:textColor="@color/solar_green_secondary"
+                            android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -540,7 +540,7 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_chevron_right"
                         android:importantForAccessibility="no"
-                        app:tint="@color/solar_green_primary" />
+                        app:tint="@color/color_primary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -551,10 +551,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/white"
+                app:cardBackgroundColor="@color/color_surface"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/card_border"
+                app:strokeColor="@color/color_outline"
                 app:strokeWidth="1dp"
                 tools:visibility="visible">
 
@@ -572,7 +572,7 @@
                         android:background="@drawable/bg_action_tile"
                         android:src="@drawable/ic_place"
                         android:importantForAccessibility="no"
-                        app:tint="@color/solar_green_primary" />
+                        app:tint="@color/color_primary" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -604,7 +604,7 @@
                                 android:background="@drawable/bg_pill_active"
                                 android:paddingHorizontal="6dp"
                                 android:paddingVertical="2dp"
-                                android:textColor="@color/pill_active_text"
+                                android:textColor="@color/color_on_primary_container"
                                 android:textSize="10sp"
                                 android:textStyle="bold"
                                 tools:text="● Active" />
@@ -637,10 +637,10 @@
         android:id="@+id/bottomNavigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:background="@color/color_surface"
         app:elevation="16dp"
-        app:itemIconTint="@color/solar_green_primary"
-        app:itemTextColor="@color/solar_green_primary"
+        app:itemIconTint="@color/color_primary"
+        app:itemTextColor="@color/color_primary"
         app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
         app:menu="@menu/bottom_nav_prosumer"
         app:labelVisibilityMode="labeled"

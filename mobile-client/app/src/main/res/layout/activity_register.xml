@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/solar_bg_light"
+    android:background="@color/color_background"
     tools:context=".ui.auth.RegisterActivity">
 
     <LinearLayout
@@ -41,10 +41,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="@color/color_surface"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
-            app:strokeColor="@color/card_border"
+            app:strokeColor="@color/color_outline"
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -57,7 +57,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="PROSUMER REGISTRATION DETAILS"
-                    android:textColor="@color/solar_green_primary"
+                    android:textColor="@color/color_primary"
                     android:textSize="11sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="16dp" />
@@ -76,7 +76,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -101,7 +101,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -126,7 +126,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -153,7 +153,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -178,7 +178,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -207,7 +207,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -234,7 +234,7 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp"
                     app:boxStrokeColor="@color/input_box_stroke_color"
-                    app:hintTextColor="@color/solar_green_primary"
+                    app:hintTextColor="@color/color_primary"
                     android:textColorHint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -256,8 +256,8 @@
                     android:textAllCaps="false"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:textColor="@color/white"
-                    app:backgroundTint="@color/solar_green_primary"
+                    android:textColor="@color/color_on_primary"
+                    app:backgroundTint="@color/color_primary"
                     app:cornerRadius="14dp" />
 
                 <!-- Progress Indicator -->
@@ -268,7 +268,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_marginTop="16dp"
-                    android:indeterminateTint="@color/solar_green_primary"
+                    android:indeterminateTint="@color/color_primary"
                     android:visibility="gone" />
 
             </LinearLayout>
@@ -283,7 +283,7 @@
             android:layout_marginTop="24dp"
             android:padding="8dp"
             android:text="@string/register_login_prompt"
-            android:textColor="@color/solar_green_primary"
+            android:textColor="@color/color_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
 
