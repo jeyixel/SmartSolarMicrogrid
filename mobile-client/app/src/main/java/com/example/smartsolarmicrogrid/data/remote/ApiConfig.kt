@@ -1,6 +1,7 @@
 package com.example.smartsolarmicrogrid.data.remote
 
 import android.content.Context
+import com.example.smartsolarmicrogrid.BuildConfig
 
 /**
  * Centralized API network configuration for Smart Solar Microgrid.
@@ -25,16 +26,16 @@ object ApiConfig {
     const val URL_AVD_IIS = "http://10.0.2.2:8080/"
     const val URL_PHYSICAL_IIS = "http://192.168.8.101:8080/"
 
-    // In-memory cache, defaults to AVD Kestrel
+    // In-memory cache, defaults to BuildConfig.API_BASE_URL
     @Volatile
-    private var activeBaseUrl: String = URL_AVD_KESTREL
+    private var activeBaseUrl: String = BuildConfig.API_BASE_URL
 
     /**
      * Initializes the API configuration from SharedPreferences if previously set.
      */
     fun init(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        activeBaseUrl = prefs.getString(KEY_BASE_URL, URL_AVD_KESTREL) ?: URL_AVD_KESTREL
+        activeBaseUrl = prefs.getString(KEY_BASE_URL, BuildConfig.API_BASE_URL) ?: BuildConfig.API_BASE_URL
     }
 
     /**
