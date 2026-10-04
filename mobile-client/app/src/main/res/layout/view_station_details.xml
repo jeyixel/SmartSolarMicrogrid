@@ -8,10 +8,10 @@
     android:layout_height="wrap_content"
     android:layout_margin="12dp"
     android:visibility="gone"
-    app:cardBackgroundColor="@color/white"
+    app:cardBackgroundColor="@color/color_surface"
     app:cardCornerRadius="20dp"
     app:cardElevation="10dp"
-    app:strokeColor="@color/card_border"
+    app:strokeColor="@color/color_outline"
     app:strokeWidth="1dp"
     tools:visibility="visible">
 
@@ -21,17 +21,18 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Header: Name & Status Pill -->
-        <RelativeLayout
+        <!-- Header: Name, Status Pill & Close -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@id/detailStatusPill">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/detailName"
@@ -56,24 +57,48 @@
                 android:id="@+id/detailStatusPill"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_pill_active"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:textColor="@color/pill_active_text"
+                android:textColor="@color/color_on_primary_container"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="● Active" />
-        </RelativeLayout>
+
+            <ImageButton
+                android:id="@+id/detailCloseButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="-8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_close"
+                android:src="@drawable/ic_close"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Distance from the user's current location -->
+        <TextView
+            android:id="@+id/detailDistance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/color_accent"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_place"
+            app:drawableTint="@color/color_accent"
+            tools:text="2.4 km from you (straight line)" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
-            android:background="@color/card_border" />
+            android:background="@color/color_outline" />
 
         <!-- Info Grid -->
         <LinearLayout
@@ -142,7 +167,7 @@
                 android:textSize="14sp"
                 app:drawableStartCompat="@android:drawable/ic_menu_recent_history"
                 android:drawablePadding="8dp"
-                app:drawableTint="@color/solar_green_primary"
+                app:drawableTint="@color/color_primary"
                 tools:text="Operating Hours: 08:00 - 18:00" />
 
             <TextView
@@ -154,7 +179,7 @@
                 android:textSize="14sp"
                 app:drawableStartCompat="@android:drawable/ic_dialog_map"
                 android:drawablePadding="8dp"
-                app:drawableTint="@color/solar_green_primary"
+                app:drawableTint="@color/color_primary"
                 tools:text="45 Galle Road, Colombo" />
 
             <TextView
@@ -166,7 +191,7 @@
                 android:textSize="14sp"
                 app:drawableStartCompat="@android:drawable/ic_menu_call"
                 android:drawablePadding="8dp"
-                app:drawableTint="@color/solar_green_primary"
+                app:drawableTint="@color/color_primary"
                 tools:text="011 234 5678" />
         </LinearLayout>
 
@@ -193,26 +218,31 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="end"
             android:layout_marginTop="20dp">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/detailCloseButton"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:id="@+id/detailDirectionsButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:text="@string/action_close"
-                android:textColor="@color/text_secondary" />
+                android:text="@string/action_directions"
+                android:textColor="@color/color_primary"
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_directions"
+                app:iconTint="@color/color_primary"
+                app:strokeColor="@color/color_primary" />
 
             <!-- Member 3 Placeholder -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/detailBookButton"
                 style="@style/Widget.Material3.Button"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/action_book_slot"
-                android:backgroundTint="@color/solar_green_primary"
+                android:backgroundTint="@color/color_primary"
                 app:cornerRadius="10dp" />
         </LinearLayout>
     </LinearLayout>

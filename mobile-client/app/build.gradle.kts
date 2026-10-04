@@ -47,12 +47,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         }
     }
     compileOptions {
@@ -74,6 +78,7 @@ dependencies {
 
     // Member 2 - map, location, REST
     implementation(libs.play.services.location)
+    implementation(libs.play.services.maps)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.fragment.ktx)

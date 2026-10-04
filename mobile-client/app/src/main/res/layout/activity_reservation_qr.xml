@@ -6,50 +6,30 @@
     android:id="@+id/qrRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/solar_bg_light">
+    android:background="@color/color_background">
 
     <!-- Top App Bar -->
     <LinearLayout
         android:id="@+id/topBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="12dp"
+        style="@style/Widget.App.TopBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
+        <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:padding="2dp"
-            android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/text_primary"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
+            style="@style/Widget.App.TopBar.Button"
+            android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back" />
 
         <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="16dp"
-            android:text="Digital QR Pass"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            style="@style/Widget.App.TopBar.Title"
+            android:text="Digital QR Pass" />
     </LinearLayout>
 
     <View
         android:id="@+id/topDivider"
-        android:layout_width="0dp"
-        android:layout_height="1dp"
-        android:background="@color/card_border"
+        style="@style/Widget.App.TopBar.Divider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
@@ -75,10 +55,10 @@
                 android:id="@+id/cardQrContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/white"
+                app:cardBackgroundColor="@color/color_surface"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="2dp"
-                app:strokeColor="@color/card_border"
+                app:strokeColor="@color/color_outline"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -104,7 +84,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:textColor="@color/solar_green_primary"
+                        android:textColor="@color/color_primary"
                         android:textSize="13sp"
                         android:fontFamily="monospace"
                         android:textStyle="bold"
@@ -130,7 +110,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
-                            android:indeterminateTint="@color/solar_green_primary" />
+                            android:indeterminateTint="@color/color_primary" />
                     </FrameLayout>
 
                     <!-- Monospace Token Reference -->
@@ -153,7 +133,7 @@
                         android:background="@drawable/bg_pill_active"
                         android:paddingHorizontal="14dp"
                         android:paddingVertical="5dp"
-                        android:textColor="@color/solar_green_primary"
+                        android:textColor="@color/color_primary"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         tools:text="● APPROVED — READY TO SCAN" />
@@ -163,7 +143,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
                         android:layout_marginVertical="16dp"
-                        android:background="@color/card_border" />
+                        android:background="@color/color_outline" />
 
                     <!-- Appointment Details Grid -->
                     <LinearLayout
@@ -251,10 +231,26 @@
         android:text="Done"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:backgroundTint="@color/solar_green_primary"
+        app:backgroundTint="@color/color_primary"
         app:cornerRadius="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation" />
+
+    <!-- Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/color_surface"
+        app:elevation="16dp"
+        app:itemIconTint="@color/color_primary"
+        app:itemTextColor="@color/color_primary"
+        app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
+        app:menu="@menu/bottom_nav_prosumer"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Quick action tile on the prosumer dashboard: icon tile with a single-line label below -->
+    <style name="Widget.App.Dashboard.QuickAction" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:paddingVertical">6dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+    </style>
+
+    <style name="Widget.App.Dashboard.QuickActionIcon" parent="">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:background">@drawable/bg_action_tile</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="tint">@color/color_primary</item>
+    </style>
+
+    <style name="Widget.App.Dashboard.QuickActionLabel" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Stat column inside the energy overview card -->
+    <style name="Widget.App.Dashboard.StatValue" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:text">–</item>
+        <item name="android:textColor">@color/color_surface</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.App.Dashboard.StatLabel" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:textColor">@color/color_on_brand_muted</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="Widget.App.Dashboard.SectionTitle" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
