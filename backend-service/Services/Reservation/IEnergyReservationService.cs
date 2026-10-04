@@ -13,4 +13,5 @@ public interface IEnergyReservationService
     Task<DashboardStatsDto> GetDashboardStatsAsync(string nic);
     Task<List<ReservationHistoryDto>> GetHistoryAsync(string nic, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, string? search = null);
     Task<QrCodeDetailsDto> GenerateOrGetQrCodeAsync(string reservationId);
+    Task<EnergyTransferResultDto> VerifyAndFinalizeTransferAsync(VerifyQrRequestDto request);
 }
