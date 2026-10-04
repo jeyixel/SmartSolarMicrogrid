@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarClock, CheckCircle2, Loader2, PowerOff } from 'lucide-react';
 
 import type { DeactivationEligibility } from '@/api/types';
@@ -65,7 +66,9 @@ export function DeactivateDialog({
   const blocked = eligibility !== null && !eligibility.canDeactivate;
   const count = eligibility?.activeReservationCount ?? 0;
 
-  return (
+  // Rendered on <body> so no ancestor (sticky header, map, transformed
+  // layout) can clip it or paint above the backdrop.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(event) => {
@@ -163,6 +166,7 @@ export function DeactivateDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
