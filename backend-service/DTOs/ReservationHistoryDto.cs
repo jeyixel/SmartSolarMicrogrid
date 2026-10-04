@@ -11,6 +11,7 @@ public class ReservationHistoryDto
     public string ProsumerNIC { get; set; } = string.Empty;
     public string SlotId { get; set; } = string.Empty;
     public string StationId { get; set; } = string.Empty;
+    public string StationName { get; set; } = string.Empty;
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public double EnergyAmountKWh { get; set; }

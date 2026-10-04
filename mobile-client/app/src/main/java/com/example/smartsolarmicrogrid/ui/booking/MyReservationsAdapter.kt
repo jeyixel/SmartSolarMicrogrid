@@ -79,7 +79,8 @@ class MyReservationsAdapter(
             onCancelClick: (ReservationHistoryDto) -> Unit,
             onViewQrClick: (ReservationHistoryDto) -> Unit
         ) {
-            tvStationId.text = item.stationId
+            val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
+            tvStationId.text = displayName
             tvEnergyAmount.text = String.format(Locale.US, "%.1f kWh", item.energyAmountKWh)
             tvActionType.text = item.actionType
             tvSlotDateTime.text = formatDateTime(item.startTime, item.endTime)
@@ -106,6 +107,11 @@ class MyReservationsAdapter(
                     tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_dark)
                     tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.text_secondary))
                 }
+                "rejected" -> {
+                    tvStatusBadge.text = "● REJECTED"
+                    tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_dark)
+                    tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.error_red))
+                }
                 "pending" -> {
                     tvStatusBadge.text = "● PENDING"
                     tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_review)
@@ -123,17 +129,18 @@ class MyReservationsAdapter(
             val startMs = parseUtcTimestamp(item.startTime)
             val hoursUntilStart = (startMs - nowMs) / (1000.0 * 60.0 * 60.0)
 
-            val isCancelled = statusLower == "cancelled"
+            val isCancelled = statusLower == "cancelled" || statusLower == "rejected"
             val isCompleted = statusLower == "completed"
-            val isLockedBy12HourRule = hoursUntilStart in 0.0..12.0 || hoursUntilStart < 0.0
+            val isPending = statusLower == "pending"
+            val isLockedBy12HourRule = hoursUntilStart < 12.0
 
             if (isCancelled) {
-                // Cancelled bookings cannot be modified, cancelled again, or scanned via QR
+                // Cancelled/Rejected bookings cannot be modified, cancelled again, or scanned via QR
                 btnModify.visibility = View.GONE
                 btnCancel.visibility = View.GONE
                 btnViewQr.visibility = View.GONE
                 tvRule12HrNotice.visibility = View.VISIBLE
-                tvRule12HrNotice.text = "Cancelled"
+                tvRule12HrNotice.text = if (statusLower == "rejected") "Rejected by Operator" else "Cancelled"
                 tvRule12HrNotice.setTextColor(ContextCompat.getColor(itemView.context, R.color.text_secondary))
             } else if (isCompleted) {
                 // Completed bookings show historical QR but no modification
@@ -146,8 +153,14 @@ class MyReservationsAdapter(
                 // Active or Pending bookings
                 btnModify.visibility = View.VISIBLE
                 btnCancel.visibility = View.VISIBLE
-                btnViewQr.visibility = View.VISIBLE
-                btnViewQr.isEnabled = true
+
+                // QR pass is strictly accessible only once approved
+                if (isPending) {
+                    btnViewQr.visibility = View.GONE
+                } else {
+                    btnViewQr.visibility = View.VISIBLE
+                    btnViewQr.isEnabled = true
+                }
 
                 if (isLockedBy12HourRule) {
                     // Under 12 hours: buttons disabled with visual notice

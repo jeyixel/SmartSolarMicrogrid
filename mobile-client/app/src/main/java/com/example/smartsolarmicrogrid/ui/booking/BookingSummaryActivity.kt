@@ -169,12 +169,19 @@ class BookingSummaryActivity : AppCompatActivity() {
             "APPROVED", "CONFIRMED" -> {
                 tvSummaryStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.solar_green_light))
             }
-            "CANCELLED" -> {
+            "CANCELLED", "REJECTED" -> {
                 tvSummaryStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.white))
             }
             else -> { // PENDING
                 tvSummaryStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.solar_amber))
             }
+        }
+
+        // Only Approved / Confirmed bookings may view/generate the QR pass
+        if (actionType == ACTION_CANCEL || formattedStatus == "CANCELLED" || formattedStatus == "REJECTED" || formattedStatus == "PENDING") {
+            btnViewQrPass.visibility = View.GONE
+        } else {
+            btnViewQrPass.visibility = View.VISIBLE
         }
     }
 

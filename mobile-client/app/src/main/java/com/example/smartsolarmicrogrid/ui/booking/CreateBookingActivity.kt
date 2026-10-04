@@ -47,6 +47,7 @@ import java.util.concurrent.Executors
 class CreateBookingActivity : AppCompatActivity() {
 
     private lateinit var btnBack: ImageView
+    private lateinit var btnRefreshStations: ImageView
     private lateinit var actvStation: AutoCompleteTextView
     private lateinit var cardSelectSlot: MaterialCardView
     private lateinit var layoutSlotUnselected: LinearLayout
@@ -115,6 +116,7 @@ class CreateBookingActivity : AppCompatActivity() {
     private fun initViews() {
         // Initialize view component handles
         btnBack = findViewById(R.id.btnBack)
+        btnRefreshStations = findViewById(R.id.btnRefreshStations)
         actvStation = findViewById(R.id.actvStation)
         cardSelectSlot = findViewById(R.id.cardSelectSlot)
         layoutSlotUnselected = findViewById(R.id.layoutSlotUnselected)
@@ -133,6 +135,11 @@ class CreateBookingActivity : AppCompatActivity() {
         // Handle navigation and interaction events
         btnBack.setOnClickListener {
             finish()
+        }
+
+        // Refresh solar stations
+        btnRefreshStations.setOnClickListener {
+            fetchStations()
         }
 
         // Open SlotPickerActivity when slot card is clicked
@@ -179,20 +186,46 @@ class CreateBookingActivity : AppCompatActivity() {
 
     private fun fetchStations() {
         // Load active stations from the backend API for the dropdown selector
+        setLoadingState(true)
         reservationApiClient.getStationLookup(currentToken) { response ->
+            setLoadingState(false)
             when (response) {
                 is ApiResponse.Success -> {
                     availableStations = response.data
-                    setupStationDropdown(availableStations)
+                    if (availableStations.isEmpty()) {
+                        AlertDialog.Builder(this)
+                            .setTitle("No Stations Available")
+                            .setMessage("There are currently no active solar microgrid stations registered in the system.")
+                            .setPositiveButton("Retry") { _, _ -> fetchStations() }
+                            .setNegativeButton("Cancel") { _, _ -> finish() }
+                            .show()
+                    } else {
+                        setupStationDropdown(availableStations)
+                    }
+                }
+                is ApiResponse.ServerError -> {
+                    AlertDialog.Builder(this)
+                        .setTitle("Station Lookup Notice")
+                        .setMessage(response.message)
+                        .setPositiveButton("Retry") { _, _ -> fetchStations() }
+                        .setNegativeButton("Cancel") { _, _ -> finish() }
+                        .show()
+                }
+                is ApiResponse.NetworkFailure -> {
+                    AlertDialog.Builder(this)
+                        .setTitle("Connection Error")
+                        .setMessage("Unable to connect to the microgrid server. Please check your network connection and retry.")
+                        .setPositiveButton("Retry") { _, _ -> fetchStations() }
+                        .setNegativeButton("Cancel") { _, _ -> finish() }
+                        .show()
                 }
                 else -> {
-                    // Fallback to sample stations if station lookup is unavailable
-                    val fallback = listOf(
-                        StationLookupDto("67a000000000000000000001", "CMB-NORTH-01", "Colombo North Solar Hub"),
-                        StationLookupDto("67a000000000000000000002", "TNG-SOUTH-02", "Tangalle Solar Hub")
-                    )
-                    availableStations = fallback
-                    setupStationDropdown(fallback)
+                    AlertDialog.Builder(this)
+                        .setTitle("Notice")
+                        .setMessage("Failed to load solar stations. Please try again.")
+                        .setPositiveButton("Retry") { _, _ -> fetchStations() }
+                        .setNegativeButton("Cancel") { _, _ -> finish() }
+                        .show()
                 }
             }
         }
@@ -213,11 +246,21 @@ class CreateBookingActivity : AppCompatActivity() {
             clearSlotSelection()
         }
 
-        // Auto-select first station if available
-        if (stations.isNotEmpty() && selectedStationId.isBlank()) {
+        // Restore previously selected station if still available, or auto-select first station
+        val existingMatchIndex = if (selectedStationId.isNotBlank()) {
+            stations.indexOfFirst { it.id == selectedStationId }
+        } else {
+            -1
+        }
+
+        if (existingMatchIndex >= 0) {
+            actvStation.setText(stationLabels[existingMatchIndex], false)
+            selectedStationName = stations[existingMatchIndex].name
+        } else if (stations.isNotEmpty()) {
             actvStation.setText(stationLabels[0], false)
             selectedStationId = stations[0].id
             selectedStationName = stations[0].name
+            clearSlotSelection()
         }
     }
 

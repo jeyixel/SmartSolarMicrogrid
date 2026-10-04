@@ -137,7 +137,7 @@ public class EnergyReservationService : IEnergyReservationService
         {
             // Keep existing slot details
             updatedReservation.StationId = existing.StationId;
-            updatedReservation.StationName = existing.StationName;
+            updatedReservation.StationName = !string.IsNullOrWhiteSpace(existing.StationName) ? existing.StationName : (slot?.StationName ?? existing.StationId);
             updatedReservation.SlotStartTime = existing.SlotStartTime;
             updatedReservation.SlotEndTime = existing.SlotEndTime;
         }
@@ -221,6 +221,78 @@ public class EnergyReservationService : IEnergyReservationService
     }
 
     /// <summary>
+    /// Approves a pending reservation and automatically generates its secure transaction QR pass.
+    /// Only Pending reservations can be approved.
+    /// </summary>
+    public async Task<EnergyReservation> ApproveReservationAsync(string id, string approvedByUserId)
+    {
+        var reservation = await _reservationRepo.GetByIdAsync(id);
+        if (reservation == null)
+            throw new KeyNotFoundException($"Reservation '{id}' not found.");
+
+        if (!string.Equals(reservation.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Cannot approve reservation '{id}' because its status is '{reservation.Status}'. Only Pending reservations can be approved.");
+
+        var slot = await _slotRepo.GetByIdAsync(reservation.SlotId);
+        if (slot == null)
+            throw new ArgumentException("Linked energy booking slot no longer exists.");
+
+        if (slot.EndTime < DateTime.UtcNow)
+            throw new InvalidOperationException("Cannot approve reservation because the booking slot time window has already passed.");
+
+        reservation.Status = "Approved";
+        reservation.LastModifiedAtUtc = DateTime.UtcNow;
+        reservation.UpdatedByUserId = approvedByUserId;
+
+        // Automatically generate dynamic QR verification token upon approval
+        if (string.IsNullOrWhiteSpace(reservation.QrCodeToken))
+        {
+            var code = !string.IsNullOrWhiteSpace(reservation.ReservationCode)
+                ? reservation.ReservationCode
+                : reservation.Id;
+            reservation.QrCodeToken = $"SSM:RES:{code}:{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            reservation.QrCodeGeneratedAtUtc = DateTime.UtcNow;
+        }
+
+        await _reservationRepo.UpdateAsync(id, reservation);
+        return reservation;
+    }
+
+    /// <summary>
+    /// Rejects a pending reservation, records the rejection reason, and immediately releases the reserved slot capacity back.
+    /// Only Pending reservations can be rejected.
+    /// </summary>
+    public async Task<EnergyReservation> RejectReservationAsync(string id, string? reason, string rejectedByUserId)
+    {
+        var reservation = await _reservationRepo.GetByIdAsync(id);
+        if (reservation == null)
+            throw new KeyNotFoundException($"Reservation '{id}' not found.");
+
+        if (!string.Equals(reservation.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Cannot reject reservation '{id}' because its status is '{reservation.Status}'. Only Pending reservations can be rejected.");
+
+        reservation.Status = "Rejected";
+        reservation.CancellationReason = !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : "Rejected by Grid Operator";
+        reservation.CancelledAtUtc = DateTime.UtcNow;
+        reservation.CancelledByUserId = rejectedByUserId;
+        reservation.LastModifiedAtUtc = DateTime.UtcNow;
+        reservation.UpdatedByUserId = rejectedByUserId;
+
+        // Invalidate any active QR token metadata
+        reservation.QrCodeToken = null;
+        reservation.QrCodeGeneratedAtUtc = null;
+        reservation.QrCodeVerifiedAtUtc = null;
+        reservation.QrCodeVerifiedByUserId = null;
+
+        await _reservationRepo.UpdateAsync(id, reservation);
+
+        // Immediately release physical slot capacity back
+        await _slotRepo.DecrementBookedSlotsAsync(reservation.SlotId, 1);
+
+        return reservation;
+    }
+
+    /// <summary>
     /// Computes dashboard statistics for a specific prosumer identified by NIC.
     /// Aggregates pending reservation counts and upcoming approved/future reservations.
     /// </summary>
@@ -293,6 +365,7 @@ public class EnergyReservationService : IEnergyReservationService
             var slotStart = res.SlotStartTime != default ? res.SlotStartTime : (slot?.StartTime ?? res.ReservationCreatedAtUtc);
             var slotEnd = res.SlotEndTime != default ? res.SlotEndTime : (slot?.EndTime ?? res.ReservationCreatedAtUtc.AddHours(1));
             var stationId = !string.IsNullOrWhiteSpace(res.StationId) ? res.StationId : (slot?.StationId ?? "N/A");
+            var stationName = !string.IsNullOrWhiteSpace(res.StationName) ? res.StationName : (slot?.StationName ?? stationId);
             var actionType = slot?.TradeType ?? "Charging";
             var energyAmount = res.RequestedKWh > 0 ? res.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
 
@@ -313,6 +386,7 @@ public class EnergyReservationService : IEnergyReservationService
                 bool matches = res.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                (!string.IsNullOrEmpty(res.ReservationCode) && res.ReservationCode.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                stationId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               stationName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                actionType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                res.Status.Contains(query, StringComparison.OrdinalIgnoreCase);
 
@@ -328,11 +402,13 @@ public class EnergyReservationService : IEnergyReservationService
                 ProsumerNIC = res.ProsumerNIC,
                 SlotId = res.SlotId,
                 StationId = stationId,
+                StationName = stationName,
                 StartTime = slotStart,
                 EndTime = slotEnd,
                 EnergyAmountKWh = energyAmount,
                 ActionType = actionType,
                 Status = res.Status,
+                QrToken = res.QrCodeToken,
                 CreatedAt = res.ReservationCreatedAtUtc,
                 UpdatedAt = res.LastModifiedAtUtc
             });
@@ -352,6 +428,13 @@ public class EnergyReservationService : IEnergyReservationService
         if (reservation == null)
         {
             throw new KeyNotFoundException($"Reservation '{reservationId}' not found.");
+        }
+
+        if (!string.Equals(reservation.Status, "Approved", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(reservation.Status, "Confirmed", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(reservation.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"QR code pass is only available for approved reservations. Current status is '{reservation.Status}'.");
         }
 
         // Generate token if not yet present

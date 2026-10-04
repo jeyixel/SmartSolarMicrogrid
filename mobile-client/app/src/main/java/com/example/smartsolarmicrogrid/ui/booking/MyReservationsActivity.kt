@@ -177,10 +177,12 @@ class MyReservationsActivity : AppCompatActivity() {
 
     private fun handleModifyReservation(item: ReservationHistoryDto) {
         // Launch EditBookingActivity passing reservation identifiers
+        val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
         val intent = Intent(this, EditBookingActivity::class.java).apply {
             putExtra(EditBookingActivity.EXTRA_RESERVATION_ID, item.id)
             putExtra(EditBookingActivity.EXTRA_CURRENT_SLOT_ID, item.slotId)
             putExtra(EditBookingActivity.EXTRA_STATION_ID, item.stationId)
+            putExtra(EditBookingActivity.EXTRA_STATION_NAME, displayName)
             putExtra(EditBookingActivity.EXTRA_START_TIME, item.startTime)
             putExtra(EditBookingActivity.EXTRA_END_TIME, item.endTime)
             putExtra(EditBookingActivity.EXTRA_ENERGY_KWH, item.energyAmountKWh)
@@ -219,11 +221,12 @@ class MyReservationsActivity : AppCompatActivity() {
                 is ApiResponse.Success -> {
                     Toast.makeText(this, "Reservation cancelled successfully.", Toast.LENGTH_SHORT).show()
 
+                    val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
                     // Navigate immediately to post-action summary confirmation screen
                     val intent = Intent(this, BookingSummaryActivity::class.java).apply {
                         putExtra(BookingSummaryActivity.EXTRA_ACTION_TYPE, BookingSummaryActivity.ACTION_CANCEL)
                         putExtra(BookingSummaryActivity.EXTRA_RESERVATION_ID, item.id)
-                        putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, item.stationId)
+                        putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, displayName)
                         putExtra(BookingSummaryActivity.EXTRA_SLOT_TIME, item.startTime)
                         putExtra(BookingSummaryActivity.EXTRA_ENERGY_KWH, item.energyAmountKWh)
                         putExtra(BookingSummaryActivity.EXTRA_STATUS, "Cancelled")

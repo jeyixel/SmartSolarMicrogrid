@@ -69,6 +69,7 @@ class EditBookingActivity : AppCompatActivity() {
     private var currentSlotId: String = ""
     private var selectedSlotId: String = ""
     private var stationId: String = ""
+    private var stationName: String = ""
     private var initialStartTime: String = ""
     private var initialEndTime: String = ""
     private var initialKWh: Double = 0.0
@@ -116,6 +117,7 @@ class EditBookingActivity : AppCompatActivity() {
         currentSlotId = intent.getStringExtra(EXTRA_CURRENT_SLOT_ID) ?: ""
         selectedSlotId = currentSlotId
         stationId = intent.getStringExtra(EXTRA_STATION_ID) ?: "Station"
+        stationName = intent.getStringExtra(EXTRA_STATION_NAME) ?: stationId
         initialStartTime = intent.getStringExtra(EXTRA_START_TIME) ?: ""
         initialEndTime = intent.getStringExtra(EXTRA_END_TIME) ?: ""
         initialKWh = intent.getDoubleExtra(EXTRA_ENERGY_KWH, 0.0)
@@ -138,7 +140,7 @@ class EditBookingActivity : AppCompatActivity() {
         progressBarEdit = findViewById(R.id.progressBarEdit)
         btnSaveChanges = findViewById(R.id.btnSaveChanges)
 
-        tvEditStationName.text = stationId
+        tvEditStationName.text = if (stationName.isNotBlank()) stationName else stationId
         tvEditStatusPill.text = "● ${initialStatus.uppercase(Locale.US)}"
 
         val formattedInitial = formatSlotTime(initialStartTime, initialEndTime)
@@ -158,7 +160,7 @@ class EditBookingActivity : AppCompatActivity() {
         cardChangeSlot.setOnClickListener {
             val intent = Intent(this, SlotPickerActivity::class.java).apply {
                 putExtra(SlotPickerActivity.EXTRA_STATION_ID, stationId)
-                putExtra(SlotPickerActivity.EXTRA_STATION_NAME, stationId)
+                putExtra(SlotPickerActivity.EXTRA_STATION_NAME, if (stationName.isNotBlank()) stationName else stationId)
                 putExtra(SlotPickerActivity.EXTRA_EXCLUDE_SLOT_ID, currentSlotId)
             }
             slotPickerLauncher.launch(intent)
@@ -191,7 +193,7 @@ class EditBookingActivity : AppCompatActivity() {
         val startMs = parseUtcTimestamp(initialStartTime)
         val hoursUntilStart = (startMs - nowMs) / (1000.0 * 60.0 * 60.0)
 
-        if (hoursUntilStart in 0.0..12.0 || hoursUntilStart < 0.0) {
+        if (hoursUntilStart < 12.0) {
             // Rule violated: disable form controls with clear visual alert
             btnSaveChanges.isEnabled = false
             cardChangeSlot.isEnabled = false
@@ -273,15 +275,17 @@ class EditBookingActivity : AppCompatActivity() {
                 putExtra(BookingSummaryActivity.EXTRA_RESERVATION_ID, reservationId)
                 putExtra(BookingSummaryActivity.EXTRA_PROSUMER_NIC, currentNic)
 
+                val fallbackStation = if (stationName.isNotBlank()) stationName else stationId
                 if (response is ApiResponse.Success) {
                     val dto = response.data
+                    val resolvedStation = if (dto.stationName.isNotBlank()) dto.stationName else fallbackStation
                     putExtra(BookingSummaryActivity.EXTRA_RESERVATION_CODE, dto.reservationCode)
-                    putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, if (dto.stationName.isNotBlank()) dto.stationName else stationId)
+                    putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, resolvedStation)
                     putExtra(BookingSummaryActivity.EXTRA_SLOT_TIME, formatSlotTime(dto.slotStartTime, dto.slotEndTime))
                     putExtra(BookingSummaryActivity.EXTRA_ENERGY_KWH, dto.requestedKWh)
                     putExtra(BookingSummaryActivity.EXTRA_STATUS, dto.status)
                 } else {
-                    putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, stationId)
+                    putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, fallbackStation)
                     putExtra(BookingSummaryActivity.EXTRA_SLOT_TIME, selectedSlotDisplayTime)
                     putExtra(BookingSummaryActivity.EXTRA_ENERGY_KWH, updatedKWh)
                     putExtra(BookingSummaryActivity.EXTRA_STATUS, initialStatus)
@@ -345,6 +349,7 @@ class EditBookingActivity : AppCompatActivity() {
         const val EXTRA_RESERVATION_ID = "extra_reservation_id"
         const val EXTRA_CURRENT_SLOT_ID = "extra_current_slot_id"
         const val EXTRA_STATION_ID = "extra_station_id"
+        const val EXTRA_STATION_NAME = "extra_station_name"
         const val EXTRA_START_TIME = "extra_start_time"
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_ENERGY_KWH = "extra_energy_kwh"
