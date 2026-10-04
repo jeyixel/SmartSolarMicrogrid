@@ -12,6 +12,9 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -106,8 +109,17 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         // in policy_maps_core_dynamite on certain devices/Play Services versions.
         MapsInitializer.initialize(this, Renderer.LEGACY, null)
 
+        enableEdgeToEdge()
         binding = ActivityNearbyStationsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Same as the other screens: keep the top bar below the status bar;
+        // the bottom bar pads itself for the system navigation bar.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            insets
+        }
 
         ApiClient.init(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
