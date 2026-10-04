@@ -73,7 +73,7 @@ export default function GridOperatorLayout() {
               <Zap className="h-5 w-5 fill-slate-900" />
             </div>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold tracking-wide">SmartSolar</span>
+              <span className="block text-sm font-semibold tracking-wide">GridPulse</span>
               <span className="block text-xs font-normal text-emerald-400">Grid Operations</span>
             </div>
           </Link>

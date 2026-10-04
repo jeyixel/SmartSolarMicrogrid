@@ -89,7 +89,7 @@ export default function OperatorLayout() {
               <Sun className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold">SmartSolar</span>
+              <span className="block text-sm font-semibold">GridPulse</span>
               <span className="block text-xs font-normal text-emerald-400">Grid Operator</span>
             </div>
           </Link>
