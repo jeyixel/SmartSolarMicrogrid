@@ -4,6 +4,6 @@
     <corners android:radius="20dp" />
     <gradient
         android:angle="135"
-        android:startColor="@color/solar_green_secondary"
-        android:endColor="@color/solar_green_primary" />
+        android:startColor="@color/color_brand_variant"
+        android:endColor="@color/color_brand" />
 </shape>
