@@ -253,7 +253,7 @@ export function OperatorDashboardPage() {
                       ? 'text-rose-500'
                       : summary.utilizationPct >= 60
                         ? 'text-amber-500'
-                        : 'text-indigo-500'
+                        : 'text-emerald-500'
                   }
                 />
                 <div className="mt-4 grid w-full grid-cols-2 gap-3 text-center">
@@ -309,7 +309,7 @@ export function OperatorDashboardPage() {
                         </div>
                         <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-sky-400 transition-[width] duration-700 ease-out"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-[width] duration-700 ease-out"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -489,7 +489,7 @@ export function OperatorDashboardPage() {
                                   className={
                                     low
                                       ? 'h-full rounded-full bg-amber-500'
-                                      : 'h-full rounded-full bg-sky-500'
+                                      : 'h-full rounded-full bg-emerald-500'
                                   }
                                   style={{ width: `${freePct}%` }}
                                 />
