@@ -15,7 +15,7 @@
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:src="@android:drawable/checkbox_on_background"
-        app:tint="@color/solar_green_primary"
+        app:tint="@color/color_primary"
         android:contentDescription="Success" />
 
     <TextView
@@ -41,10 +41,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        app:cardBackgroundColor="@color/solar_bg_light"
+        app:cardBackgroundColor="@color/color_surface_variant"
         app:cardCornerRadius="14dp"
         app:cardElevation="0dp"
-        app:strokeColor="@color/card_border"
+        app:strokeColor="@color/color_outline"
         app:strokeWidth="1dp">
 
         <LinearLayout
@@ -76,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textColor="@color/solar_green_primary"
+                android:textColor="@color/color_primary"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 tools:text="Transferred: 45.0 kWh (Charging)" />
@@ -86,7 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textColor="@color/solar_green_primary"
+                android:textColor="@color/color_primary"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 tools:text="Status: ● COMPLETED" />
@@ -103,7 +103,7 @@
         android:text="Complete &amp; Return"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:backgroundTint="@color/solar_green_primary"
+        app:backgroundTint="@color/color_primary"
         app:cornerRadius="12dp" />
 
 </LinearLayout>

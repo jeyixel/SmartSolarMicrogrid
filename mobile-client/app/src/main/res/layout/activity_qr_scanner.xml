@@ -6,7 +6,7 @@
     android:id="@+id/scannerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    android:background="@android:color/black">
 
     <!-- ZXing Camera Barcode Scanner View -->
     <com.journeyapps.barcodescanner.DecoratedBarcodeView
@@ -39,7 +39,7 @@
             android:layout_height="36dp"
             android:padding="4dp"
             android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/white"
+            app:tint="@android:color/white"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
@@ -51,7 +51,7 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:text="Scan Prosumer Pass"
-            android:textColor="@color/white"
+            android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -61,7 +61,7 @@
             android:layout_height="36dp"
             android:padding="6dp"
             android:src="@android:drawable/ic_menu_camera"
-            app:tint="@color/white"
+            app:tint="@android:color/white"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
@@ -96,7 +96,7 @@
             android:layout_height="44dp"
             android:layout_marginTop="12dp"
             android:text="Enter Token Manually"
-            android:textColor="@color/white"
+            android:textColor="@android:color/white"
             app:strokeColor="#64748B"
             app:cornerRadius="10dp" />
     </LinearLayout>
