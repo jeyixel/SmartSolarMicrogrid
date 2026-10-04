@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:translateX="18"
+        android:translateY="18"
+        android:scaleX="3"
+        android:scaleY="3">
+        <!-- Sun Rays and Center merged -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M11,2v4.07C8.12,6.5 5.68,8.46 4.62,11.16L2,9.53V11h2.26c-0.17,0.65 -0.26,1.32 -0.26,2s0.09,1.35 0.26,2H2v1.47l2.62,-1.63C5.68,17.54 8.12,19.5 11,19.93V24h2v-4.07c2.88,-0.43 5.32,-2.39 6.38,-5.09L22,16.47V15h-2.26c0.17,-0.65 0.26,-1.32 0.26,-2s-0.09,-1.35 -0.26,-2H22v-1.47l-2.62,1.63C18.32,8.46 15.88,6.5 13,6.07V2H11z M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7z"/>
+
+        <!-- Solar Panel -->
+        <path
+            android:fillColor="#000000"
+            android:pathData="M4,15.5 h16 l-2.5,6 h-11 z" />
+
+        <!-- Grid Lines (cutout via stroke in monochrome is tricky, so we just use the fill shape) -->
+    </group>
+</vector>

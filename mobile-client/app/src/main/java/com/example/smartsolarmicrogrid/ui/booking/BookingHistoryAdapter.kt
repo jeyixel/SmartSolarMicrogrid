@@ -59,21 +59,21 @@ class BookingHistoryAdapter(
                 "approved", "completed" -> {
                     tvStatusBadge.text = "● ${item.status.uppercase()}"
                     tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_active)
-                    tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.solar_green_primary))
+                    tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.color_on_primary_container))
                 }
                 "cancelled" -> {
                     tvStatusBadge.text = "● ${item.status.uppercase()}"
-                    tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_dark)
+                    tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_neutral)
                     tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.text_secondary))
                 }
                 "pending" -> {
                     tvStatusBadge.text = "● PENDING"
                     tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_review)
-                    tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.solar_amber))
+                    tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.color_on_warning_container))
                 }
                 else -> {
                     tvStatusBadge.text = "● ${item.status.uppercase()}"
-                    tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_dark)
+                    tvStatusBadge.setBackgroundResource(R.drawable.bg_pill_neutral)
                     tvStatusBadge.setTextColor(ContextCompat.getColor(itemView.context, R.color.text_primary))
                 }
             }

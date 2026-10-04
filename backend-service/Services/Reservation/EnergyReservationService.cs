@@ -255,6 +255,7 @@ public class EnergyReservationService : IEnergyReservationService
             var slotStart = res.SlotStartTime != default ? res.SlotStartTime : (slot?.StartTime ?? res.ReservationCreatedAtUtc);
             var slotEnd = res.SlotEndTime != default ? res.SlotEndTime : (slot?.EndTime ?? res.ReservationCreatedAtUtc.AddHours(1));
             var stationId = !string.IsNullOrWhiteSpace(res.StationId) ? res.StationId : (slot?.StationId ?? "N/A");
+            var stationName = !string.IsNullOrWhiteSpace(res.StationName) ? res.StationName : (slot?.StationName ?? stationId);
             var actionType = slot?.TradeType ?? "Charging";
             var energyAmount = res.RequestedKWh > 0 ? res.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
 
@@ -275,6 +276,7 @@ public class EnergyReservationService : IEnergyReservationService
                 bool matches = res.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                (!string.IsNullOrEmpty(res.ReservationCode) && res.ReservationCode.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                stationId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                               stationName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                actionType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                                res.Status.Contains(query, StringComparison.OrdinalIgnoreCase);
 
@@ -290,6 +292,7 @@ public class EnergyReservationService : IEnergyReservationService
                 ProsumerNIC = res.ProsumerNIC,
                 SlotId = res.SlotId,
                 StationId = stationId,
+                StationName = stationName,
                 StartTime = slotStart,
                 EndTime = slotEnd,
                 EnergyAmountKWh = energyAmount,

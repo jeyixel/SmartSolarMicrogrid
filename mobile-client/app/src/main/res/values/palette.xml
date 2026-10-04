@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Raw brand palette. These values never change between light and dark mode.
+
+    Do NOT reference palette_* colors from layouts, drawables or code. Use the
+    semantic roles in colors.xml instead (e.g. @color/color_surface), which
+    values-night/colors.xml remaps for dark mode.
+-->
+<resources>
+    <!-- Greens -->
+    <color name="palette_green_950">#062616</color>
+    <color name="palette_green_900">#0B3B24</color>
+    <color name="palette_green_800">#144D34</color>
+    <color name="palette_green_700">#2E7D32</color>
+    <color name="palette_green_300">#81C784</color>
+    <color name="palette_green_200">#A5D6A7</color>
+    <color name="palette_green_100">#C8E6C9</color>
+    <color name="palette_green_tint_dark">#1E3A2A</color>
+
+    <!-- Teals -->
+    <color name="palette_teal_700">#00796B</color>
+    <color name="palette_teal_300">#4DB6AC</color>
+    <color name="palette_teal_200">#80CBC4</color>
+    <color name="palette_teal_100">#B2DFDB</color>
+    <color name="palette_teal_tint_dark">#16302C</color>
+    <color name="palette_teal_tint_dark_2">#1D403B</color>
+
+    <!-- Ambers -->
+    <color name="palette_amber_800">#F57F17</color>
+    <color name="palette_amber_300">#FFB74D</color>
+    <color name="palette_amber_100">#FFECB3</color>
+    <color name="palette_amber_tint_dark">#3D2E10</color>
+
+    <!-- Reds -->
+    <color name="palette_red_800">#C62828</color>
+    <color name="palette_red_300">#EF9A9A</color>
+    <color name="palette_red_100">#FFCDD2</color>
+    <color name="palette_red_50">#FFEBEE</color>
+    <color name="palette_red_tint_dark">#3B1D1F</color>
+    <color name="palette_red_outline_dark">#6B2C30</color>
+
+    <!-- Light neutrals -->
+    <color name="palette_white">#FFFFFF</color>
+    <color name="palette_neutral_50">#F7F9F7</color>
+    <color name="palette_neutral_200">#E0E5E0</color>
+    <color name="palette_neutral_600">#5C635A</color>
+    <color name="palette_neutral_900">#1A1C1A</color>
+
+    <!-- Dark neutrals -->
+    <color name="palette_dark_950">#0F1411</color>
+    <color name="palette_dark_900">#181F1A</color>
+    <color name="palette_dark_800">#222A24</color>
+    <color name="palette_dark_700">#36403A</color>
+    <color name="palette_dark_text">#E3E8E3</color>
+    <color name="palette_dark_text_secondary">#A9B3AA</color>
+
+    <!-- White at fixed opacities, for content on brand (always-green) surfaces -->
+    <color name="palette_white_80">#CCFFFFFF</color>
+    <color name="palette_white_70">#B3FFFFFF</color>
+    <color name="palette_white_20">#33FFFFFF</color>
+    <color name="palette_white_15">#26FFFFFF</color>
+    <color name="palette_white_12">#1FFFFFFF</color>
+</resources>

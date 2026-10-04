@@ -21,7 +21,7 @@ import java.util.concurrent.Executors
  * Strictly adheres to pure Android architecture without third-party network frameworks.
  */
 class ReservationApiClient(
-    private val baseUrl: String = DEFAULT_BASE_URL
+    private val baseUrl: String = ApiConfig.getBaseUrl()
 ) {
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -322,7 +322,6 @@ class ReservationApiClient(
 
     companion object {
         private const val TAG = "ReservationApiClient"
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:5127/"
         private const val CONNECT_TIMEOUT_MS = 10000
         private const val READ_TIMEOUT_MS = 10000
     }

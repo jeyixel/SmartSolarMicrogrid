@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.data.local.TokenManager
 import com.example.smartsolarmicrogrid.data.remote.ApiConfig
 import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
@@ -52,9 +53,11 @@ class ReservationQrActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.qrRoot)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
+
+        ProsumerNavigator.setupBottomNav(this, findViewById(R.id.bottomNavigation), R.id.nav_qr)
 
         ApiConfig.init(this)
         reservationApiClient = ReservationApiClient(ApiConfig.getBaseUrl())

@@ -1,54 +1,56 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!--
+        Single DayNight theme for the whole app. It only references semantic
+        color roles, which values-night/colors.xml remaps for dark mode, so no
+        separate night theme is needed.
+    -->
     <style name="Base.Theme.SmartSolarMicrogrid" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Solar Green Color Palette -->
-        <item name="colorPrimary">@color/solar_green_primary</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorPrimaryContainer">@color/solar_green_light</item>
-        <item name="colorOnPrimaryContainer">@color/solar_green_dark</item>
-        <item name="colorSecondary">@color/solar_green_secondary</item>
-        <item name="colorTertiary">@color/solar_teal</item>
-        <item name="android:colorBackground">@color/solar_bg_light</item>
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorOnPrimary">@color/color_on_primary</item>
+        <item name="colorPrimaryContainer">@color/color_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/color_on_primary_container</item>
+        <item name="colorSecondary">@color/color_brand_variant</item>
+        <item name="colorOnSecondary">@color/color_on_brand</item>
+        <item name="colorTertiary">@color/color_accent</item>
+        <item name="colorError">@color/color_error</item>
+        <item name="colorOnError">@color/color_on_error</item>
+
+        <item name="android:colorBackground">@color/color_background</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        <item name="colorSurface">@color/color_surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/color_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/color_outline</item>
+
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+
+        <!-- Dark status/navigation bar icons in light mode, light icons in dark mode -->
+        <item name="android:windowLightStatusBar">@bool/use_light_system_bars</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">@bool/use_light_system_bars</item>
+        <item name="android:statusBarColor">@color/color_background</item>
+        <item name="android:navigationBarColor">@color/color_surface</item>
+
+        <item name="textInputStyle">@style/Widget.App.TextInputLayout.OutlinedBox</item>
     </style>
 
     <style name="Theme.SmartSolarMicrogrid" parent="Base.Theme.SmartSolarMicrogrid" />
-
-    <!-- Dedicated Light Theme for Auth Screens (Login & Register) ensuring light appearance in both Light and Dark Mode -->
-    <style name="Theme.SmartSolarMicrogrid.AuthLight" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/solar_green_primary</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorPrimaryContainer">@color/solar_green_light</item>
-        <item name="colorOnPrimaryContainer">@color/solar_green_dark</item>
-        <item name="colorSecondary">@color/solar_green_secondary</item>
-        <item name="colorTertiary">@color/solar_teal</item>
-        <item name="android:colorBackground">@color/solar_bg_light</item>
-        <item name="colorSurface">@color/white</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorSurfaceVariant">@color/solar_bg_light</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-        <item name="colorError">@color/error_red</item>
-        <item name="colorOnError">@color/white</item>
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:textColorSecondary">@color/text_secondary</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
-        <item name="textInputStyle">@style/Widget.App.TextInputLayout.OutlinedBox</item>
-    </style>
 
     <style name="Widget.App.TextInputLayout.OutlinedBox" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">12dp</item>
         <item name="boxCornerRadiusTopEnd">12dp</item>
         <item name="boxCornerRadiusBottomStart">12dp</item>
         <item name="boxCornerRadiusBottomEnd">12dp</item>
-        <item name="boxBackgroundColor">@color/white</item>
+        <item name="boxBackgroundColor">@color/color_surface</item>
         <item name="boxStrokeColor">@color/input_box_stroke_color</item>
         <item name="boxStrokeWidth">1dp</item>
         <item name="boxStrokeWidthFocused">2dp</item>
-        <item name="hintTextColor">@color/solar_green_primary</item>
+        <item name="hintTextColor">@color/color_primary</item>
         <item name="android:textColorHint">@color/text_secondary</item>
         <item name="endIconTint">@color/text_secondary</item>
         <item name="helperTextTextColor">@color/text_secondary</item>
-        <item name="errorTextColor">@color/error_red</item>
+        <item name="errorTextColor">@color/color_error</item>
     </style>
 
     <style name="ShapeAppearanceOverlay.App.CornerSize50Percent" parent="">

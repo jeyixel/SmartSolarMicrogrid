@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
 import com.example.smartsolarmicrogrid.data.local.TokenManager
 import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
@@ -57,9 +58,11 @@ class BookingHistoryActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.bookingHistoryRoot)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
+
+        ProsumerNavigator.setupBottomNav(this, findViewById(R.id.bottomNavigation), R.id.nav_bookings)
 
         authSessionDao = AuthSessionDao(this)
         tokenManager = TokenManager(this)

@@ -85,7 +85,11 @@
     <string name="label_open_now">Open now</string>
     <string name="label_closed_now">Closed now</string>
 
-    <string name="fmt_marker_snippet">%1$s km away</string>
+    <string name="fmt_marker_snippet">%1$s away</string>
+    <string name="fmt_distance_from_you">%1$s from you (straight line)</string>
+    <string name="msg_distance_unavailable">Turn on location to see the distance from you</string>
+    <string name="action_directions">Directions</string>
+    <string name="msg_no_maps_app">No maps app is available to show directions.</string>
     <string name="fmt_station_code">Code: %1$s</string>
     <string name="fmt_capacity">Capacity: %1$s kWh</string>
     <string name="fmt_slots">Battery slots: %1$d of %2$d available</string>
