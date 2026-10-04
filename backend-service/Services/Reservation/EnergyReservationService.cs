@@ -142,13 +142,44 @@ public class EnergyReservationService : IEnergyReservationService
             updatedReservation.SlotEndTime = existing.SlotEndTime;
         }
 
-        // Preserve immutable fields
+        // Preserve immutable and identity fields
         updatedReservation.Id = id;
         updatedReservation.ReservationCode = existing.ReservationCode;
         updatedReservation.ReservationCreatedAtUtc = existing.ReservationCreatedAtUtc;
         updatedReservation.CreatedByUserId = existing.CreatedByUserId;
         updatedReservation.LastModifiedAtUtc = DateTime.UtcNow;
         updatedReservation.UpdatedByUserId = updatedByUserId;
+
+        if (string.IsNullOrWhiteSpace(updatedReservation.ProsumerNIC))
+        {
+            updatedReservation.ProsumerNIC = existing.ProsumerNIC;
+        }
+        if (string.IsNullOrWhiteSpace(updatedReservation.ProsumerName))
+        {
+            updatedReservation.ProsumerName = existing.ProsumerName;
+        }
+        if (string.IsNullOrWhiteSpace(updatedReservation.Status))
+        {
+            updatedReservation.Status = existing.Status;
+        }
+
+        // Handle QR token preservation based on whether physical slot has changed
+        if (existing.SlotId == updatedReservation.SlotId)
+        {
+            // Same slot — only details like kWh changed, the QR is still valid for this time/place
+            updatedReservation.QrCodeToken = existing.QrCodeToken;
+            updatedReservation.QrCodeGeneratedAtUtc = existing.QrCodeGeneratedAtUtc;
+            updatedReservation.QrCodeVerifiedAtUtc = existing.QrCodeVerifiedAtUtc;
+            updatedReservation.QrCodeVerifiedByUserId = existing.QrCodeVerifiedByUserId;
+        }
+        else
+        {
+            // Slot changed — reset QR fields so a fresh QR pass is generated for the new station/time
+            updatedReservation.QrCodeToken = null;
+            updatedReservation.QrCodeGeneratedAtUtc = null;
+            updatedReservation.QrCodeVerifiedAtUtc = null;
+            updatedReservation.QrCodeVerifiedByUserId = null;
+        }
 
         await _reservationRepo.UpdateAsync(id, updatedReservation);
     }
@@ -176,6 +207,13 @@ public class EnergyReservationService : IEnergyReservationService
         reservation.CancelledByUserId = cancelledByUserId;
         reservation.LastModifiedAtUtc = DateTime.UtcNow;
         reservation.UpdatedByUserId = cancelledByUserId;
+
+        // Invalidate active QR token metadata so a cancelled booking's QR cannot be scanned
+        reservation.QrCodeToken = null;
+        reservation.QrCodeGeneratedAtUtc = null;
+        reservation.QrCodeVerifiedAtUtc = null;
+        reservation.QrCodeVerifiedByUserId = null;
+
         await _reservationRepo.UpdateAsync(id, reservation);
 
         // Free up the physical slot

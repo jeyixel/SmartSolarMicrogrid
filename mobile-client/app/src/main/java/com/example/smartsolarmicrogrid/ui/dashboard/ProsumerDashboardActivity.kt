@@ -16,6 +16,8 @@ import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.repository.StationRepository
 import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
 import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
+import com.example.smartsolarmicrogrid.ui.booking.MyReservationsActivity
 import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -129,6 +131,10 @@ class ProsumerDashboardActivity : AppCompatActivity() {
                     startActivity(Intent(this, NearbyStationsActivity::class.java))
                     true
                 }
+                R.id.nav_bookings -> {
+                    startActivity(Intent(this, MyReservationsActivity::class.java))
+                    true
+                }
                 R.id.nav_profile -> {
                     startActivity(Intent(this, ProfileActivity::class.java))
                     true
@@ -148,6 +154,11 @@ class ProsumerDashboardActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.cardMapPlaceholder)?.setOnClickListener {
             startActivity(Intent(this, NearbyStationsActivity::class.java))
+        }
+
+        // Member 3 - Book Energy quick action
+        findViewById<View>(R.id.btnQuickBook)?.setOnClickListener {
+            startActivity(Intent(this, CreateBookingActivity::class.java))
         }
 
         // Member 4 - My Bookings quick action
