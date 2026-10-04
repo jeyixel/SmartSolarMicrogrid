@@ -11,9 +11,9 @@ export default function RoleBadge({ role, className = '' }: RoleBadgeProps) {
   const label = getRoleLabel(role);
 
   const styles = {
-    0: 'bg-indigo-100 text-indigo-800 border-indigo-200', // Backoffice
-    1: 'bg-sky-100 text-sky-800 border-sky-200', // Grid Operator
-    2: 'bg-teal-100 text-teal-800 border-teal-200', // Prosumer
+    0: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/30', // Backoffice
+    1: 'bg-sky-100 dark:bg-sky-500/20 text-sky-800 dark:text-sky-300 border-sky-200 dark:border-sky-500/30', // Grid Operator
+    2: 'bg-teal-100 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-500/30', // Prosumer
   };
 
   return (

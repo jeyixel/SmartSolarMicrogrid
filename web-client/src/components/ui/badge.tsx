@@ -14,9 +14,9 @@ const badgeVariants = cva(
         outline: 'text-foreground',
         // Station lifecycle states. Colour alone never carries the meaning —
         // the badge always shows the status word too.
-        active: 'border-transparent bg-emerald-100 text-emerald-800',
-        inactive: 'border-transparent bg-slate-200 text-slate-700',
-        maintenance: 'border-transparent bg-amber-100 text-amber-800',
+        active: 'border-transparent bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300',
+        inactive: 'border-transparent bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300',
+        maintenance: 'border-transparent bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300',
       },
     },
     defaultVariants: {

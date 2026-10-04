@@ -31,9 +31,9 @@ import {
 // ─── Station status chip ──────────────────────────────────────────────────────
 const StationStatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const styles: Record<string, string> = {
-    Active:      'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Inactive:    'bg-slate-100  text-slate-600   border-slate-200',
-    Maintenance: 'bg-amber-50   text-amber-700   border-amber-200',
+    Active:      'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30',
+    Inactive:    'bg-muted  text-muted-foreground   border-border',
+    Maintenance: 'bg-amber-50 dark:bg-amber-500/10   text-amber-700 dark:text-amber-400   border-amber-200 dark:border-amber-500/30',
   };
   return (
     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-label-sm uppercase font-mono ${styles[status] ?? styles.Inactive}`}>
@@ -276,7 +276,7 @@ export const StationScheduleManager: React.FC = () => {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-headline-lg text-slate-900">Station Schedule &amp; Slots Manager</h2>
+          <h2 className="text-headline-lg text-foreground">Station Schedule &amp; Slots Manager</h2>
           <p className="text-body-sm text-muted-foreground mt-0.5">
             Manage real-time available battery slots and view or maintain operational hours.
           </p>
@@ -288,7 +288,7 @@ export const StationScheduleManager: React.FC = () => {
       </div>
 
       {/* Station selector */}
-      <Card className="rounded-lg border border-slate-200 bg-white shadow-none">
+      <Card className="rounded-lg border border-border bg-card shadow-none">
         <CardHeader className="pb-3 pt-4 px-4">
           <CardTitle className="text-headline-sm flex items-center gap-2">
             <MapPin className="h-4 w-4 text-primary" />
@@ -326,10 +326,10 @@ export const StationScheduleManager: React.FC = () => {
                     { label: 'Total Slots',  value: String(station.totalBatterySlots), mono: true },
                     { label: 'Status',       value: <StationStatusBadge status={station.status} /> },
                   ].map(({ label, value, mono }) => (
-                    <div key={label} className="bg-slate-50 rounded border border-slate-200 px-3 py-2">
+                    <div key={label} className="bg-background rounded border border-border px-3 py-2">
                       <p className="text-label-sm text-muted-foreground uppercase mb-0.5">{label}</p>
                       {typeof value === 'string'
-                        ? <p className={`text-telemetry-md text-slate-900 ${mono ? 'font-mono' : ''}`}>{value}</p>
+                        ? <p className={`text-telemetry-md text-foreground ${mono ? 'font-mono' : ''}`}>{value}</p>
                         : value}
                     </div>
                   ))}
@@ -343,7 +343,7 @@ export const StationScheduleManager: React.FC = () => {
       {station && (
         <>
           {/* ── Battery Slots Override ── */}
-          <Card className="rounded-lg border border-slate-200 bg-white shadow-none">
+          <Card className="rounded-lg border border-border bg-card shadow-none">
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-headline-sm flex items-center gap-2">
                 <BatteryCharging className="h-4 w-4 text-primary" />
@@ -353,7 +353,7 @@ export const StationScheduleManager: React.FC = () => {
             <CardContent className="px-4 pb-4">
               <div className="flex items-end gap-3">
                 <div className="flex-1 max-w-xs">
-                  <label className="text-label-md text-slate-700 block mb-1">
+                  <label className="text-label-md text-slate-700 dark:text-slate-300 block mb-1">
                     Available Slots
                     <span className="text-muted-foreground ml-1.5">
                       (max: <span className="font-mono">{station.totalBatterySlots}</span>)
@@ -379,16 +379,16 @@ export const StationScheduleManager: React.FC = () => {
               <div className="mt-2 flex items-center gap-2">
                 <Zap className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-body-sm text-muted-foreground">
-                  Current available: <span className="font-mono text-slate-900">{station.availableBatterySlots}</span>
+                  Current available: <span className="font-mono text-foreground">{station.availableBatterySlots}</span>
                   {' / '}
-                  <span className="font-mono text-slate-900">{station.totalBatterySlots}</span> total
+                  <span className="font-mono text-foreground">{station.totalBatterySlots}</span> total
                 </span>
               </div>
             </CardContent>
           </Card>
 
           {/* ── Operational Schedule ── */}
-          <Card className="rounded-lg border border-slate-200 bg-white shadow-none">
+          <Card className="rounded-lg border border-border bg-card shadow-none">
             <CardHeader className="pb-3 pt-4 px-4">
               <CardTitle className="text-headline-sm flex items-center justify-between">
                 <span className="flex items-center gap-2">
@@ -405,8 +405,8 @@ export const StationScheduleManager: React.FC = () => {
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-4">
               {!isBackoffice && (
-                <Alert variant="default" className="text-sm text-slate-700">
-                  <Lock className="h-4 w-4 inline mr-1 text-slate-500" />
+                <Alert variant="default" className="text-sm text-slate-700 dark:text-slate-300">
+                  <Lock className="h-4 w-4 inline mr-1 text-slate-500 dark:text-slate-400" />
                   Operational schedules are maintained by the <strong>Backoffice</strong> team. Grid Operators have read-only visibility.
                 </Alert>
               )}
@@ -421,17 +421,17 @@ export const StationScheduleManager: React.FC = () => {
                   {station.operationalSchedule.map((entry, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2"
+                      className="flex items-center justify-between rounded border border-border bg-background px-3 py-2"
                     >
                       <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-slate-500 flex-shrink-0" />
+                        <Clock className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
                         <div>
-                          <p className="text-body-md text-slate-900 font-medium">
+                          <p className="text-body-md text-foreground font-medium">
                             {entry.dayOfWeek}
                           </p>
-                          <p className="text-body-sm font-mono text-slate-600 mt-0.5">
+                          <p className="text-body-sm font-mono text-muted-foreground mt-0.5">
                             {entry.isClosed ? (
-                              <span className="text-amber-700 font-medium">Closed all day</span>
+                              <span className="text-amber-700 dark:text-amber-400 font-medium">Closed all day</span>
                             ) : (
                               `${entry.openTime} → ${entry.closeTime}`
                             )}
@@ -457,8 +457,8 @@ export const StationScheduleManager: React.FC = () => {
 
               {/* Add/update schedule window form (Backoffice only) */}
               {isBackoffice && (
-                <div className="pt-3 border-t border-slate-100">
-                  <p className="text-label-md text-slate-700 mb-3 uppercase">
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-label-md text-slate-700 dark:text-slate-300 mb-3 uppercase">
                     Add or Update Operating Hours
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3 items-end">
@@ -492,12 +492,12 @@ export const StationScheduleManager: React.FC = () => {
                       />
                     </div>
                     <div className="flex items-center gap-2 h-10">
-                      <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={newIsClosed}
                           onChange={e => setNewIsClosed(e.target.checked)}
-                          className="rounded border-slate-300"
+                          className="rounded border-input"
                         />
                         Closed all day
                       </label>

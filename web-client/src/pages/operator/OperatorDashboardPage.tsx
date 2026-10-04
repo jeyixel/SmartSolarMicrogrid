@@ -217,7 +217,7 @@ export function OperatorDashboardPage() {
               value={
                 <>
                   {summary.availableSlots}
-                  <span className="text-base font-medium text-slate-400">
+                  <span className="text-base font-medium text-slate-400 dark:text-slate-500">
                     {' '}/ {summary.totalSlots}
                   </span>
                 </>
@@ -240,10 +240,10 @@ export function OperatorDashboardPage() {
           {/* Gauge + capacity leaderboard */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div
-              className="animate-rise-in rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="animate-rise-in rounded-xl border border-border bg-card p-5 shadow-sm"
               style={{ animationDelay: '240ms' }}
             >
-              <h2 className="text-sm font-semibold text-slate-900">Slot Utilization</h2>
+              <h2 className="text-sm font-semibold text-foreground">Slot Utilization</h2>
               <div className="mt-4 flex flex-col items-center">
                 <DonutGauge
                   value={summary.utilizationPct}
@@ -257,36 +257,36 @@ export function OperatorDashboardPage() {
                   }
                 />
                 <div className="mt-4 grid w-full grid-cols-2 gap-3 text-center">
-                  <div className="rounded-lg bg-slate-50 py-2">
-                    <p className="font-display text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-background py-2">
+                    <p className="font-display text-lg font-bold text-foreground">
                       {summary.usedSlots}
                     </p>
-                    <p className="text-[11px] uppercase tracking-wider text-slate-500">Occupied</p>
+                    <p className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Occupied</p>
                   </div>
-                  <div className="rounded-lg bg-slate-50 py-2">
-                    <p className="font-display text-lg font-bold text-slate-900">
+                  <div className="rounded-lg bg-background py-2">
+                    <p className="font-display text-lg font-bold text-foreground">
                       {summary.availableSlots}
                     </p>
-                    <p className="text-[11px] uppercase tracking-wider text-slate-500">Free</p>
+                    <p className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Free</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div
-              className="animate-rise-in rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2"
+              className="animate-rise-in rounded-xl border border-border bg-card p-5 shadow-sm lg:col-span-2"
               style={{ animationDelay: '300ms' }}
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-slate-900">Capacity by Station</h2>
-                <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <h2 className="text-sm font-semibold text-foreground">Capacity by Station</h2>
+                <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                   <Gauge className="h-3.5 w-3.5" />
                   {summary.totalCapacity.toFixed(1)} kWh total
                 </span>
               </div>
 
               {summary.byCapacity.length === 0 ? (
-                <p className="mt-6 text-sm text-slate-500">No stations to chart yet.</p>
+                <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">No stations to chart yet.</p>
               ) : (
                 <ul className="mt-4 space-y-3">
                   {summary.byCapacity.map((station) => {
@@ -299,15 +299,15 @@ export function OperatorDashboardPage() {
                         <div className="flex items-baseline justify-between gap-3 text-sm">
                           <Link
                             to={`/stations/${encodeURIComponent(station.id)}`}
-                            className="truncate font-medium text-slate-700 hover:text-indigo-600"
+                            className="truncate font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400"
                           >
                             {station.name}
                           </Link>
-                          <span className="shrink-0 font-mono text-xs text-slate-500">
+                          <span className="shrink-0 font-mono text-xs text-slate-500 dark:text-slate-400">
                             {station.capacityKWh.toFixed(1)} kWh
                           </span>
                         </div>
-                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-sky-400 transition-[width] duration-700 ease-out"
                             style={{ width: `${pct}%` }}
@@ -320,18 +320,18 @@ export function OperatorDashboardPage() {
               )}
 
               {/* Status split */}
-              <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4 text-xs">
-                <span className="inline-flex items-center gap-1.5 text-slate-600">
-                  <Power className="h-3.5 w-3.5 text-emerald-600" />
-                  Active <strong className="text-slate-900">{summary.activeCount}</strong>
+              <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 dark:border-slate-800 pt-4 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Power className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  Active <strong className="text-foreground">{summary.activeCount}</strong>
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-slate-600">
-                  <Wrench className="h-3.5 w-3.5 text-amber-600" />
-                  Maintenance <strong className="text-slate-900">{summary.maintenanceCount}</strong>
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  Maintenance <strong className="text-foreground">{summary.maintenanceCount}</strong>
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-slate-600">
-                  <PowerOff className="h-3.5 w-3.5 text-slate-400" />
-                  Inactive <strong className="text-slate-900">{summary.inactiveCount}</strong>
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <PowerOff className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                  Inactive <strong className="text-foreground">{summary.inactiveCount}</strong>
                 </span>
               </div>
             </div>
@@ -340,27 +340,27 @@ export function OperatorDashboardPage() {
           {/* Low battery slot alert */}
           {summary.lowSlotStations.length > 0 && (
             <div
-              className="animate-rise-in overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white shadow-sm"
+              className="animate-rise-in overflow-hidden rounded-xl border border-amber-200 dark:border-amber-500/30 bg-gradient-to-r from-amber-50 dark:from-amber-500/10 to-card shadow-sm"
               style={{ animationDelay: '360ms' }}
             >
               <div className="flex items-start gap-3 p-5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-sm font-semibold text-amber-900">
+                  <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-300">
                     {summary.lowSlotStations.length} active station
                     {summary.lowSlotStations.length === 1 ? '' : 's'} running low on battery slots
                   </h2>
-                  <ul className="mt-2 divide-y divide-amber-100">
+                  <ul className="mt-2 divide-y divide-amber-100 dark:divide-amber-500/30">
                     {summary.lowSlotStations.map((station) => (
                       <li
                         key={station.id}
-                        className="flex items-center justify-between gap-3 py-1.5 text-sm text-amber-900"
+                        className="flex items-center justify-between gap-3 py-1.5 text-sm text-amber-900 dark:text-amber-300"
                       >
                         <span className="truncate">
                           {station.name}{' '}
-                          <span className="font-mono text-xs text-amber-700">
+                          <span className="font-mono text-xs text-amber-700 dark:text-amber-400">
                             {station.stationCode}
                           </span>
                         </span>
@@ -385,21 +385,21 @@ export function OperatorDashboardPage() {
 
           {/* Station overview table */}
           <div
-            className="animate-rise-in overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+            className="animate-rise-in overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             style={{ animationDelay: '420ms' }}
           >
-            <div className="flex flex-col gap-3 border-b border-slate-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-slate-500" />
-                <h2 className="text-base font-semibold text-slate-900">Station Overview</h2>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                <Zap className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+                <h2 className="text-base font-semibold text-foreground">Station Overview</h2>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   {visibleStations.length}
                 </span>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -409,11 +409,11 @@ export function OperatorDashboardPage() {
                   />
                 </div>
                 <div className="relative">
-                  <SlidersHorizontal className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <SlidersHorizontal className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <select
                     value={sortKey}
                     onChange={(e) => setSortKey(e.target.value as SortKey)}
-                    className="h-8 rounded border border-slate-300 bg-white pl-7 pr-2 text-[13px] text-slate-700 focus:border-primary focus:outline-none"
+                    className="h-8 rounded border border-input bg-card pl-7 pr-2 text-[13px] text-slate-700 dark:text-slate-300 focus:border-primary focus:outline-none"
                     aria-label="Sort stations by"
                   >
                     <option value="name">Name</option>
@@ -423,7 +423,7 @@ export function OperatorDashboardPage() {
                 </div>
                 <Link
                   to="/stations"
-                  className="whitespace-nowrap text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                  className="whitespace-nowrap text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                 >
                   Manage all &rarr;
                 </Link>
@@ -432,8 +432,8 @@ export function OperatorDashboardPage() {
 
             {visibleStations.length === 0 ? (
               <div className="p-10 text-center">
-                <MapPin className="mx-auto h-8 w-8 text-slate-300" />
-                <p className="mt-3 text-sm text-slate-500">
+                <MapPin className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                   {stations.length === 0
                     ? 'No stations have been registered yet.'
                     : 'No stations match your search.'}
@@ -441,8 +441,8 @@ export function OperatorDashboardPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-600">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                <table className="w-full text-left text-sm text-muted-foreground">
+                  <thead className="border-b border-border bg-background/80 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <tr>
                       <th scope="col" className="px-6 py-3">Station</th>
                       <th scope="col" className="px-6 py-3">Status</th>
@@ -451,7 +451,7 @@ export function OperatorDashboardPage() {
                       <th scope="col" className="px-6 py-3 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {visibleStations.map((station) => {
                       const low = station.availableBatterySlots <= LOW_SLOTS_THRESHOLD;
                       const freePct =
@@ -460,10 +460,10 @@ export function OperatorDashboardPage() {
                           : 0;
 
                       return (
-                        <tr key={station.id} className="transition-colors hover:bg-slate-50/80">
+                        <tr key={station.id} className="transition-colors hover:bg-background/80">
                           <td className="px-6 py-3">
-                            <div className="font-medium text-slate-900">{station.name}</div>
-                            <div className="font-mono text-xs text-slate-500">
+                            <div className="font-medium text-foreground">{station.name}</div>
+                            <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
                               {station.stationCode}
                             </div>
                           </td>
@@ -475,16 +475,16 @@ export function OperatorDashboardPage() {
                               <span
                                 className={
                                   low
-                                    ? 'font-semibold text-amber-700'
-                                    : 'font-medium text-slate-700'
+                                    ? 'font-semibold text-amber-700 dark:text-amber-400'
+                                    : 'font-medium text-slate-700 dark:text-slate-300'
                                 }
                               >
                                 {station.availableBatterySlots}
-                                <span className="text-slate-400">
+                                <span className="text-slate-400 dark:text-slate-500">
                                   /{station.totalBatterySlots}
                                 </span>
                               </span>
-                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+                              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                                 <div
                                   className={
                                     low
@@ -498,14 +498,14 @@ export function OperatorDashboardPage() {
                           </td>
                           <td className="px-6 py-3">
                             <span className="inline-flex items-center gap-1.5 font-mono text-xs">
-                              <Gauge className="h-3.5 w-3.5 text-slate-400" />
+                              <Gauge className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                               {station.capacityKWh.toFixed(1)} kWh
                             </span>
                           </td>
                           <td className="px-6 py-3 text-right">
                             <Link
                               to={`/stations/${encodeURIComponent(station.id)}`}
-                              className="rounded-md px-2.5 py-1 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-800"
+                              className="rounded-md px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-800 dark:hover:text-indigo-300"
                             >
                               Details
                             </Link>
@@ -532,19 +532,19 @@ function SkeletonState() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-32 animate-pulse rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="h-32 animate-pulse rounded-xl border border-border bg-card p-5 shadow-sm"
           >
-            <div className="h-3 w-24 rounded bg-slate-100" />
-            <div className="mt-6 h-8 w-16 rounded bg-slate-100" />
-            <div className="mt-3 h-2.5 w-32 rounded bg-slate-100" />
+            <div className="h-3 w-24 rounded bg-muted" />
+            <div className="mt-6 h-8 w-16 rounded bg-muted" />
+            <div className="mt-3 h-2.5 w-32 rounded bg-muted" />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="h-72 animate-pulse rounded-xl border border-slate-200 bg-white" />
-        <div className="h-72 animate-pulse rounded-xl border border-slate-200 bg-white lg:col-span-2" />
+        <div className="h-72 animate-pulse rounded-xl border border-border bg-card" />
+        <div className="h-72 animate-pulse rounded-xl border border-border bg-card lg:col-span-2" />
       </div>
-      <div className="h-64 animate-pulse rounded-xl border border-slate-200 bg-white" />
+      <div className="h-64 animate-pulse rounded-xl border border-border bg-card" />
     </div>
   );
 }

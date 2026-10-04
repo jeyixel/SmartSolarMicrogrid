@@ -107,7 +107,7 @@ export function DeactivateDialog({
               Checking for active reservations…
             </div>
           ) : blocked ? (
-            <div className="flex gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="flex gap-3 rounded-md border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-300">
               <CalendarClock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-semibold">
@@ -122,7 +122,7 @@ export function DeactivateDialog({
               </div>
             </div>
           ) : (
-            <div className="flex gap-3 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+            <div className="flex gap-3 rounded-md border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/10 p-3 text-sm text-emerald-900 dark:text-emerald-300">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
               <p>
                 No active reservations are associated with this station, so it can be

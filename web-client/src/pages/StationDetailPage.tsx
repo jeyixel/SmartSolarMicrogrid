@@ -145,7 +145,7 @@ export function StationDetailPage() {
                 <span
                   className={
                     station.isOpenNow
-                      ? 'text-sm font-medium text-emerald-700'
+                      ? 'text-sm font-medium text-emerald-700 dark:text-emerald-400'
                       : 'text-sm font-medium text-muted-foreground'
                   }
                 >
@@ -192,11 +192,11 @@ export function StationDetailPage() {
       {Boolean(actionError) && <ErrorAlert error={actionError} />}
 
       {isInactive && (
-        <div className="flex gap-3 rounded-md border border-slate-300 bg-slate-50 p-4 text-sm">
-          <PowerOff className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+        <div className="flex gap-3 rounded-md border border-input bg-background p-4 text-sm">
+          <PowerOff className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />
           <div>
-            <p className="font-semibold text-slate-900">This station is out of service</p>
-            <p className="text-slate-700">
+            <p className="font-semibold text-foreground">This station is out of service</p>
+            <p className="text-slate-700 dark:text-slate-300">
               {station.deactivationReason
                 ? `Reason: ${station.deactivationReason}`
                 : 'No reason was recorded.'}
@@ -204,7 +204,7 @@ export function StationDetailPage() {
                 ? ` · Deactivated ${formatDateTime(station.deactivatedAtUtc)}`
                 : ''}
             </p>
-            <p className="mt-1 text-slate-700">
+            <p className="mt-1 text-slate-700 dark:text-slate-300">
               It is hidden from the mobile app and cannot accept new reservations.
             </p>
           </div>
