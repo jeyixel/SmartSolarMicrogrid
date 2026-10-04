@@ -2,7 +2,10 @@ package com.example.smartsolarmicrogrid.ui.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.location.Location
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
@@ -36,6 +39,11 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.Dash
+import com.google.android.gms.maps.model.Gap
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
 import kotlinx.coroutines.launch
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.MapsInitializer.Renderer
@@ -63,6 +71,12 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var lastQueriedLocationLng = 79.8612
 
     private var mapLoaded = false
+
+    /** The user's real position; null until a location fix succeeds (never the fallback point). */
+    private var userLocation: LatLng? = null
+
+    /** Dashed line from the user to the currently selected station. */
+    private var routeLine: Polyline? = null
 
     /**
      * Android 12+ lets the user grant only approximate location, so the result
@@ -108,6 +122,13 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         binding.detailsPanel.detailCloseButton.setOnClickListener {
             viewModel.dismissDetails()
+        }
+
+        binding.detailsPanel.detailDirectionsButton.setOnClickListener {
+            val station = (viewModel.detailState.value as? StationDetailUiState.Success)?.station
+            val lat = station?.latitude
+            val lng = station?.longitude
+            if (lat != null && lng != null) openDirections(lat, lng)
         }
 
         // Member 3 Integration Handoff Point
@@ -249,6 +270,7 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 showMessage(getString(R.string.msg_location_unavailable))
                 loadStationsAround(6.9271, 79.8612)
             } else {
+                userLocation = LatLng(location.latitude, location.longitude)
                 updateMapCenter(location.latitude, location.longitude)
                 loadStationsAround(location.latitude, location.longitude)
             }
@@ -328,10 +350,14 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 BitmapDescriptorFactory.HUE_ORANGE
             }
 
+            val distanceKm = userLocation?.let { distanceKmBetween(it, LatLng(lat, lng)) }
+                ?: station.distanceKm
+
             val marker = mMap?.addMarker(
                 MarkerOptions()
                     .position(LatLng(lat, lng))
                     .title(station.name)
+                    .snippet(distanceKm?.let { getString(R.string.fmt_marker_snippet, formatDistance(it)) })
                     .icon(BitmapDescriptorFactory.defaultMarker(markerColor))
             )
             
@@ -346,18 +372,24 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         if (!mapLoaded) return
         mMap?.clear()
         markers.clear()
+        routeLine = null
     }
 
     private fun renderDetails(state: StationDetailUiState) {
         val panel = binding.detailsPanel
 
         when (state) {
-            is StationDetailUiState.Hidden -> panel.detailsCard.visibility = View.GONE
+            is StationDetailUiState.Hidden -> {
+                panel.detailsCard.visibility = View.GONE
+                clearRoute()
+            }
 
             is StationDetailUiState.Loading -> {
                 panel.detailsCard.visibility = View.VISIBLE
                 panel.detailLoading.visibility = View.VISIBLE
                 panel.detailName.text = ""
+                panel.detailDistance.visibility = View.GONE
+                panel.detailDirectionsButton.isEnabled = false
                 panel.detailStatusPill.visibility = View.GONE
                 panel.detailCode.visibility = View.GONE
                 panel.detailAddress.visibility = View.GONE
@@ -378,6 +410,9 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 panel.detailsCard.visibility = View.VISIBLE
                 panel.detailLoading.visibility = View.GONE
                 panel.detailName.text = state.message
+                panel.detailDistance.visibility = View.GONE
+                panel.detailDirectionsButton.isEnabled = false
+                clearRoute()
                 panel.detailStatusPill.visibility = View.GONE
                 panel.detailCode.visibility = View.GONE
                 panel.detailAddress.visibility = View.GONE
@@ -409,6 +444,7 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         bindOptionalText(panel.detailCode, getString(R.string.fmt_station_code, station.stationCode))
+        bindDistanceAndRoute(station)
         bindOptionalText(panel.detailAddress, station.addressLine)
         bindOptionalText(panel.detailDescription, station.description)
 
@@ -429,17 +465,13 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         bindOptionalText(
             panel.detailCapacity,
-            station.capacityKWh?.let { getString(R.string.fmt_capacity, formatNumber(it)) }
+            station.capacityKWh?.let { "${formatNumber(it)} kWh" }
         )
 
         bindOptionalText(
             panel.detailSlots,
             if (station.availableBatterySlots != null && station.totalBatterySlots != null) {
-                getString(
-                    R.string.fmt_slots,
-                    station.availableBatterySlots,
-                    station.totalBatterySlots
-                )
+                "${station.availableBatterySlots} / ${station.totalBatterySlots}"
             } else {
                 null
             }
@@ -452,6 +484,88 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 ?.let { getString(R.string.fmt_contact, it) }
         )
     }
+
+    // -- Distance & directions -------------------------------------------------
+
+    /**
+     * Shows how far the station is from the user, draws a dashed line between
+     * them, and zooms the map so both points are visible.
+     */
+    private fun bindDistanceAndRoute(station: StationDetailDto) {
+        val panel = binding.detailsPanel
+        val lat = station.latitude
+        val lng = station.longitude
+        panel.detailDirectionsButton.isEnabled = lat != null && lng != null
+        panel.detailDistance.visibility = View.VISIBLE
+
+        val from = userLocation
+        if (lat == null || lng == null || from == null) {
+            panel.detailDistance.text = getString(R.string.msg_distance_unavailable)
+            clearRoute()
+            return
+        }
+
+        val to = LatLng(lat, lng)
+        panel.detailDistance.text =
+            getString(R.string.fmt_distance_from_you, formatDistance(distanceKmBetween(from, to)))
+        // Wait for the card to lay out so its height can be used as map padding
+        panel.detailsCard.post { showRoute(from, to) }
+    }
+
+    private fun showRoute(from: LatLng, to: LatLng) {
+        val map = mMap ?: return
+        clearRoute()
+        routeLine = map.addPolyline(
+            PolylineOptions()
+                .add(from, to)
+                .width(10f)
+                .color(ContextCompat.getColor(this, R.color.solar_teal))
+                .pattern(listOf(Dash(30f), Gap(20f)))
+                .geodesic(true)
+        )
+
+        // Keep both points above the details card, which covers the lower part of the map
+        map.setPadding(0, 0, 0, binding.detailsPanel.detailsCard.height)
+        val bounds = LatLngBounds.builder().include(from).include(to).build()
+        val padding = (resources.displayMetrics.density * 72).toInt()
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
+    }
+
+    private fun clearRoute() {
+        routeLine?.remove()
+        routeLine = null
+        mMap?.setPadding(0, 0, 0, 0)
+    }
+
+    /** Opens turn-by-turn navigation in Google Maps, or any app/browser that handles the link. */
+    private fun openDirections(lat: Double, lng: Double) {
+        val destination = "$lat,$lng"
+        val navigation = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$destination"))
+            .setPackage("com.google.android.apps.maps")
+        val web = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving")
+        )
+        try {
+            startActivity(navigation)
+        } catch (e: ActivityNotFoundException) {
+            try {
+                startActivity(web)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(this, R.string.msg_no_maps_app, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun distanceKmBetween(from: LatLng, to: LatLng): Double {
+        val result = FloatArray(1)
+        Location.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude, result)
+        return result[0] / 1000.0
+    }
+
+    /** "850 m" below 1 km, otherwise "2.4 km". */
+    private fun formatDistance(km: Double): String =
+        if (km < 1.0) "${(km * 1000).toInt()} m" else "${formatNumber(km)} km"
 
     /** Hides a field entirely when the API sent null, rather than printing "null". */
     private fun bindOptionalText(view: TextView, value: String?) {
