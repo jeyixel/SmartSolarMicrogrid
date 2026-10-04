@@ -27,9 +27,9 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import android.widget.Toast
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -37,6 +37,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.Dash
@@ -161,36 +162,22 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun setupNavigation() {
-        val topToolbar = findViewById<MaterialToolbar>(R.id.topToolbar)
-        topToolbar.setNavigationOnClickListener {
-            finish()
+        binding.btnBack.setOnClickListener { finish() }
+
+        // Re-reads the user's location and reloads stations around it
+        binding.btnRefreshStations.setOnClickListener {
+            hideMessage()
+            viewModel.dismissDetails()
+            requestLocationOrFallback()
         }
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-        bottomNav.selectedItemId = R.id.nav_map
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    startActivity(Intent(this, ProsumerDashboardActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    })
-                    true
-                }
-                R.id.nav_map -> true
-                R.id.nav_profile -> {
-                    startActivity(Intent(this, ProfileActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    })
-                    true
-                }
-                else -> false
-            }
-        }
+        ProsumerNavigator.setupBottomNav(this, binding.bottomNavigation, R.id.nav_map)
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mapLoaded = true
+        applyMapTheme(googleMap)
 
         mMap?.setOnMarkerClickListener { marker ->
             val stationId = marker.tag as? String
@@ -210,6 +197,16 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                 drawMarkers(it.stations)
             }
         }
+    }
+
+    /** Uses a dark map style when the app is in dark mode. */
+    private fun applyMapTheme(map: GoogleMap) {
+        val isNight = (resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        map.setMapStyle(
+            if (isNight) MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style_night) else null
+        )
     }
 
     // -- Location ------------------------------------------------------------
@@ -435,12 +432,12 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
             panel.detailStatusPill.visibility = View.VISIBLE
             panel.detailStatusPill.text = "● Active"
             panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_active)
-            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.solar_green_primary))
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.color_on_primary_container))
         } else {
             panel.detailStatusPill.visibility = View.VISIBLE
             panel.detailStatusPill.text = "● Closed"
             panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_review)
-            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.solar_amber))
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.color_on_warning_container))
         }
 
         bindOptionalText(panel.detailCode, getString(R.string.fmt_station_code, station.stationCode))
@@ -519,7 +516,7 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
             PolylineOptions()
                 .add(from, to)
                 .width(10f)
-                .color(ContextCompat.getColor(this, R.color.solar_teal))
+                .color(ContextCompat.getColor(this, R.color.color_accent))
                 .pattern(listOf(Dash(30f), Gap(20f)))
                 .geodesic(true)
         )

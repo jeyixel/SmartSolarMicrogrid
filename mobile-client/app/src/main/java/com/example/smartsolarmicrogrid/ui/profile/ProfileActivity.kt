@@ -13,12 +13,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
 import com.example.smartsolarmicrogrid.data.local.TokenManager
 import com.example.smartsolarmicrogrid.data.remote.AuthApiClient
 import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.remote.dto.UserProfileDto
 import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
+import com.example.smartsolarmicrogrid.util.ThemeManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -48,6 +50,7 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var btnEditProfile: MaterialButton
     private lateinit var btnRequestDeactivation: MaterialButton
     private lateinit var btnLogout: MaterialButton
+    private lateinit var btnAppearance: MaterialButton
     private lateinit var btnBack: ImageView
     private lateinit var progressBarProfile: ProgressBar
 
@@ -68,9 +71,11 @@ class ProfileActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.profileRoot)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
+
+        ProsumerNavigator.setupBottomNav(this, findViewById(R.id.bottomNavigation), R.id.nav_profile)
 
         tokenManager = TokenManager(this)
         authSessionDao = AuthSessionDao(this)
@@ -108,11 +113,29 @@ class ProfileActivity : AppCompatActivity() {
         btnEditProfile = findViewById(R.id.btnEditProfile)
         btnRequestDeactivation = findViewById(R.id.btnRequestDeactivation)
         btnLogout = findViewById(R.id.btnLogout)
+        btnAppearance = findViewById(R.id.btnAppearance)
+        btnAppearance.text = "Appearance: ${ThemeManager.getMode(this).label}"
         btnBack = findViewById(R.id.btnBack)
         progressBarProfile = findViewById(R.id.progressBarProfile)
     }
 
+    private fun showAppearanceDialog() {
+        val modes = ThemeManager.Mode.entries
+        val current = modes.indexOf(ThemeManager.getMode(this))
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Appearance")
+            .setSingleChoiceItems(modes.map { it.label }.toTypedArray(), current) { dialog, which ->
+                dialog.dismiss()
+                // Recreates open screens with the chosen theme
+                ThemeManager.setMode(this, modes[which])
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
     private fun setupListeners() {
+        btnAppearance.setOnClickListener { showAppearanceDialog() }
+
         btnBack.setOnClickListener {
             finish()
         }
@@ -242,15 +265,15 @@ class ProfileActivity : AppCompatActivity() {
         tvHeroNicBadge.text = "NIC: ${profile.nic}"
 
         if (profile.accountStatus.equals("Active", ignoreCase = true)) {
-            tvDisplayStatus.setTextColor(ContextCompat.getColor(this, R.color.pill_active_text))
+            tvDisplayStatus.setTextColor(ContextCompat.getColor(this, R.color.color_on_primary_container))
             tvHeroStatusBadge.text = "● Active"
             tvHeroStatusBadge.setBackgroundResource(R.drawable.bg_pill_active)
-            tvHeroStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.solar_green_primary))
+            tvHeroStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.color_on_primary_container))
         } else {
-            tvDisplayStatus.setTextColor(ContextCompat.getColor(this, R.color.solar_amber))
+            tvDisplayStatus.setTextColor(ContextCompat.getColor(this, R.color.color_on_warning_container))
             tvHeroStatusBadge.text = "● ${profile.accountStatus}"
             tvHeroStatusBadge.setBackgroundResource(R.drawable.bg_pill_review)
-            tvHeroStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.pill_review_text))
+            tvHeroStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.color_on_warning_container))
         }
 
         // Deactivation banner and button state

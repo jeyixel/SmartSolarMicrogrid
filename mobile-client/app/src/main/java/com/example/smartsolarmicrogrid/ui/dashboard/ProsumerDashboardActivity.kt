@@ -20,7 +20,7 @@ import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
 import com.example.smartsolarmicrogrid.data.repository.StationRepository
 import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
 import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
-import com.example.smartsolarmicrogrid.ui.booking.ReservationQrActivity
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -29,7 +29,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 import java.util.concurrent.Executors
 
 /**
@@ -96,9 +95,6 @@ class ProsumerDashboardActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::bottomNav.isInitialized) {
-            bottomNav.selectedItemId = R.id.nav_home
-        }
         tvGreeting.text = greetingForNow()
         loadSessionData()
     }
@@ -157,11 +153,11 @@ class ProsumerDashboardActivity : AppCompatActivity() {
                     tvUpcomingApprovedCount.text = response.data.upcomingApprovedCount.toString()
                     tvTotalCount.text = response.data.totalBookingsCount.toString()
                     val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                    setSyncStatus("● Updated $time", R.color.solar_green_light)
+                    setSyncStatus("● Updated $time", R.color.color_on_brand_accent)
                 }
                 else -> {
                     // Retain the last known counts and flag that the data may be stale
-                    setSyncStatus("● Offline", R.color.pill_review_bg)
+                    setSyncStatus("● Offline", R.color.color_on_brand_warning)
                 }
             }
         }
@@ -177,13 +173,7 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         reservationApiClient.getBookingHistory(nic = nic, authToken = token) { response ->
             when (response) {
                 is ApiResponse.Success -> {
-                    val now = System.currentTimeMillis()
-                    nextReservation = response.data
-                        .filter { it.status.equals("Approved", true) || it.status.equals("Pending", true) }
-                        .mapNotNull { item -> parseUtc(item.startTime)?.let { item to it } }
-                        .filter { (_, start) -> start.time >= now }
-                        .minByOrNull { (_, start) -> start.time }
-                        ?.first
+                    nextReservation = ProsumerNavigator.findNextReservation(response.data)
                     renderNextTransfer(loadFailed = false)
                 }
                 else -> {
@@ -216,7 +206,7 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         tvNextStatus.text = next.status.uppercase(Locale.getDefault())
         tvNextStatus.setBackgroundResource(if (approved) R.drawable.bg_pill_active else R.drawable.bg_pill_review)
         tvNextStatus.setTextColor(
-            ContextCompat.getColor(this, if (approved) R.color.pill_active_text else R.color.pill_review_text)
+            ContextCompat.getColor(this, if (approved) R.color.color_on_primary_container else R.color.color_on_warning_container)
         )
 
         tvNextStation.text = next.stationName.ifBlank { next.stationId }
@@ -224,47 +214,11 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         tvNextEnergy.text = String.format(Locale.getDefault(), "%.1f kWh • %s", next.energyAmountKWh, next.actionType)
     }
 
-    private fun openNextReservationQr() {
-        val next = nextReservation
-        if (next != null && next.status.equals("Approved", true)) {
-            startActivity(Intent(this, ReservationQrActivity::class.java).apply {
-                putExtra(ReservationQrActivity.EXTRA_RESERVATION_ID, next.id)
-            })
-        } else {
-            val message = if (next != null) {
-                "Your QR code will be available once the reservation is approved."
-            } else {
-                "No upcoming reservation. Book a slot to get a QR code."
-            }
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, BookingHistoryActivity::class.java))
-        }
-    }
+    private fun openNextReservationQr() = ProsumerNavigator.openQrFor(this, nextReservation)
 
     private fun setupListeners() {
-        bottomNav.selectedItemId = R.id.nav_home
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> true
-                R.id.nav_map -> {
-                    startActivity(Intent(this, NearbyStationsActivity::class.java))
-                    true
-                }
-                R.id.nav_bookings -> {
-                    startActivity(Intent(this, BookingHistoryActivity::class.java))
-                    true
-                }
-                R.id.nav_qr -> {
-                    openNextReservationQr()
-                    true
-                }
-                R.id.nav_profile -> {
-                    startActivity(Intent(this, ProfileActivity::class.java))
-                    true
-                }
-                else -> false
-            }
-        }
+        // QR uses the reservation this screen already loaded, so it opens instantly
+        ProsumerNavigator.setupBottomNav(this, bottomNav, R.id.nav_home) { openNextReservationQr() }
 
         // Quick Actions logic mapping (Member 2 map logic & navigation)
         val openStations = View.OnClickListener {
@@ -307,19 +261,10 @@ class ProsumerDashboardActivity : AppCompatActivity() {
             .joinToString("") { it.first().uppercase() }
             .ifEmpty { "P" }
 
-    /** Parses the backend's UTC ISO-8601 timestamps (with or without fractional seconds / 'Z'). */
-    private fun parseUtc(iso: String): Date? = try {
-        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }.parse(iso.substringBefore('.').removeSuffix("Z"))
-    } catch (e: Exception) {
-        null
-    }
-
     /** e.g. "Today • 10:30 – 11:30", "Tomorrow • 09:00 – 10:00", "Mon, 12 Oct • 14:00 – 15:00". */
     private fun formatSchedule(startIso: String, endIso: String): String {
-        val start = parseUtc(startIso) ?: return startIso
-        val end = parseUtc(endIso)
+        val start = ProsumerNavigator.parseUtc(startIso) ?: return startIso
+        val end = ProsumerNavigator.parseUtc(endIso)
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         val day = when {
