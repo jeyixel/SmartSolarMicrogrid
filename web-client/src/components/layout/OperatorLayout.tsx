@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import {
   CalendarClock,
   CalendarOff,
+  History,
   LayoutDashboard,
   Layers,
   ListChecks,
@@ -47,6 +48,11 @@ export default function OperatorLayout() {
       to: '/operator/reservations',
       label: 'Reservations',
       icon: <CalendarClock className="h-5 w-5" />,
+    },
+    {
+      to: '/operator/history',
+      label: 'Booking History',
+      icon: <History className="h-5 w-5" />,
     },
     {
       to: '/operator/stations',
