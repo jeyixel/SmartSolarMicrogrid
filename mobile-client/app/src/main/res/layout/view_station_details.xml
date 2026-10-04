@@ -21,17 +21,18 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <!-- Header: Name & Status Pill -->
-        <RelativeLayout
+        <!-- Header: Name, Status Pill & Close -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@id/detailStatusPill">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/detailName"
@@ -56,8 +57,6 @@
                 android:id="@+id/detailStatusPill"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_pill_active"
                 android:paddingHorizontal="10dp"
@@ -66,7 +65,33 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 tools:text="● Active" />
-        </RelativeLayout>
+
+            <ImageButton
+                android:id="@+id/detailCloseButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="-8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_close"
+                android:src="@drawable/ic_close"
+                app:tint="@color/text_secondary" />
+        </LinearLayout>
+
+        <!-- Distance from the user's current location -->
+        <TextView
+            android:id="@+id/detailDistance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/solar_teal"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_place"
+            app:drawableTint="@color/solar_teal"
+            tools:text="2.4 km from you (straight line)" />
 
         <View
             android:layout_width="match_parent"
@@ -193,24 +218,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="end"
             android:layout_marginTop="20dp">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/detailCloseButton"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
+                android:id="@+id/detailDirectionsButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:text="@string/action_close"
-                android:textColor="@color/text_secondary" />
+                android:text="@string/action_directions"
+                android:textColor="@color/solar_green_primary"
+                app:cornerRadius="10dp"
+                app:icon="@drawable/ic_directions"
+                app:iconTint="@color/solar_green_primary"
+                app:strokeColor="@color/solar_green_primary" />
 
             <!-- Member 3 Placeholder -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/detailBookButton"
                 style="@style/Widget.Material3.Button"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="@string/action_book_slot"
                 android:backgroundTint="@color/solar_green_primary"
                 app:cornerRadius="10dp" />
