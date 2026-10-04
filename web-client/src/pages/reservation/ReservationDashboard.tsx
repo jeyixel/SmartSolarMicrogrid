@@ -26,17 +26,17 @@ import {
 } from 'lucide-react';
 
 const STATUS_STYLES: Record<string, { chip: string; dot: string }> = {
-  Pending:   { chip: 'bg-amber-50 text-amber-700 border-amber-200',   dot: 'bg-amber-500 animate-pulse' },
-  Approved:  { chip: 'bg-blue-50 text-blue-700 border-blue-200',      dot: 'bg-blue-500' },
-  CheckedIn: { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200',dot: 'bg-indigo-500' },
-  Completed: { chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  Cancelled: { chip: 'bg-red-50 text-red-700 border-red-200',         dot: 'bg-red-400' },
-  Rejected:  { chip: 'bg-red-50 text-red-900 border-red-300',         dot: 'bg-red-600' },
+  Pending:   { chip: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/30',   dot: 'bg-amber-500 animate-pulse' },
+  Approved:  { chip: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-500/30',      dot: 'bg-blue-500' },
+  CheckedIn: { chip: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30',dot: 'bg-indigo-500' },
+  Completed: { chip: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30', dot: 'bg-emerald-500' },
+  Cancelled: { chip: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30',         dot: 'bg-red-400' },
+  Rejected:  { chip: 'bg-red-50 dark:bg-red-500/10 text-red-900 dark:text-red-300 border-red-300 dark:border-red-500/40',         dot: 'bg-red-600' },
 };
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const s = STATUS_STYLES[status] ?? {
-    chip: 'bg-slate-100 text-slate-600 border-slate-200',
+    chip: 'bg-muted text-muted-foreground border-border',
     dot: 'bg-slate-400',
   };
   return (
@@ -50,10 +50,10 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 const KpiChip: React.FC<{ label: string; count: number; dotClass: string }> = ({
   label, count, dotClass,
 }) => (
-  <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 flex items-center gap-2">
+  <div className="bg-card border border-border rounded-lg px-3 py-2 flex items-center gap-2">
     <span className={`h-2 w-2 rounded-full flex-shrink-0 ${dotClass}`} />
-    <span className="text-telemetry-md text-slate-900">{count}</span>
-    <span className="text-label-sm text-slate-500 uppercase">{label}</span>
+    <span className="text-telemetry-md text-foreground">{count}</span>
+    <span className="text-label-sm text-slate-500 dark:text-slate-400 uppercase">{label}</span>
   </div>
 );
 
@@ -129,7 +129,7 @@ export const ReservationDashboard: React.FC = () => {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-headline-lg text-slate-900">Reservation Dashboard</h2>
+          <h2 className="text-headline-lg text-foreground">Reservation Dashboard</h2>
           <p className="text-body-sm text-muted-foreground mt-0.5">
             Monitor and manage all prosumer energy trading appointments.
           </p>
@@ -155,7 +155,7 @@ export const ReservationDashboard: React.FC = () => {
       </div>
 
       {/* Data table */}
-      <div className="rounded-lg border border-slate-200 overflow-hidden bg-white shadow-none">
+      <div className="rounded-lg border border-border overflow-hidden bg-card shadow-none">
         <Table>
           <TableHeader>
             <TableRow className="h-7">
@@ -182,7 +182,7 @@ export const ReservationDashboard: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-16">
                   <div className="flex flex-col items-center gap-3">
-                    <Clock className="h-10 w-10 text-slate-200" />
+                    <Clock className="h-10 w-10 text-slate-200 dark:text-slate-700" />
                     <p className="text-body-md text-muted-foreground">No reservations found.</p>
                     <Button size="sm" variant="outline" onClick={openCreate}>
                       <PlusCircle className="h-3.5 w-3.5 mr-1.5" />
@@ -196,18 +196,18 @@ export const ReservationDashboard: React.FC = () => {
                 <TableRow key={r.id}>
                   {/* Reservation Code */}
                   <TableCell>
-                    <span className="font-mono text-xs text-slate-900">{r.reservationCode}</span>
+                    <span className="font-mono text-xs text-foreground">{r.reservationCode}</span>
                   </TableCell>
                   
                   {/* Prosumer NIC */}
                   <TableCell>
-                    <span className="font-mono text-xs text-slate-900">{r.prosumerNIC}</span>
+                    <span className="font-mono text-xs text-foreground">{r.prosumerNIC}</span>
                   </TableCell>
 
                   {/* Station */}
                   <TableCell>
                       <div>
-                        <p className="font-mono text-xs text-slate-900">{r.stationId}</p>
+                        <p className="font-mono text-xs text-foreground">{r.stationId}</p>
                         <p className="text-body-sm text-muted-foreground">{r.stationName}</p>
                       </div>
                   </TableCell>
@@ -215,7 +215,7 @@ export const ReservationDashboard: React.FC = () => {
                   {/* Date & Time */}
                   <TableCell>
                       <div className="font-mono text-xs">
-                        <p className="text-slate-900">
+                        <p className="text-foreground">
                           {new Date(r.slotStartTime).toLocaleString('en-GB', {
                             dateStyle: 'short',
                             timeStyle: 'short',
@@ -232,7 +232,7 @@ export const ReservationDashboard: React.FC = () => {
 
                   {/* Energy */}
                   <TableCell className="text-right">
-                    <span className="font-mono text-xs text-slate-900">
+                    <span className="font-mono text-xs text-foreground">
                       {r.requestedKWh ? r.requestedKWh.toFixed(1) + ' kWh' : '—'}
                     </span>
                   </TableCell>
@@ -272,7 +272,7 @@ export const ReservationDashboard: React.FC = () => {
                       <div className="flex justify-end">
                         {r.status === 'Completed' || r.status === 'Approved' || r.status === 'CheckedIn'
                           ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                          : <XCircle className="h-4 w-4 text-slate-300" />}
+                          : <XCircle className="h-4 w-4 text-slate-300 dark:text-slate-600" />}
                       </div>
                     )}
                   </TableCell>

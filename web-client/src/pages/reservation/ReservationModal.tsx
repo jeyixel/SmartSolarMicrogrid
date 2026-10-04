@@ -194,7 +194,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         )}
 
         <div>
-          <label className="text-label-md text-slate-700 block mb-1">
+          <label className="text-label-md text-slate-700 dark:text-slate-300 block mb-1">
             Prosumer NIC <span className="text-red-500">*</span>
           </label>
           <Input
@@ -207,7 +207,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         </div>
 
         <div>
-          <label className="text-label-md text-slate-700 block mb-1">
+          <label className="text-label-md text-slate-700 dark:text-slate-300 block mb-1">
             Requested Energy (kWh) <span className="text-red-500">*</span>
           </label>
           <Input
@@ -222,7 +222,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         </div>
 
         <div>
-          <label className="text-label-md text-slate-700 block mb-1">
+          <label className="text-label-md text-slate-700 dark:text-slate-300 block mb-1">
             Microgrid Station <span className="text-red-500">*</span>
           </label>
           {stationsLoading ? (
@@ -246,7 +246,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         </div>
 
         <div>
-          <label className="text-label-md text-slate-700 block mb-1">
+          <label className="text-label-md text-slate-700 dark:text-slate-300 block mb-1">
             Booking Slot <span className="text-red-500">*</span>
           </label>
           {slotsLoading ? (
@@ -278,7 +278,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           <strong>Rules:</strong> Slots must start within the next 7 days. Changes/Cancellations are blocked if starting within 12 hours.
         </Alert>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+        <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
           <Button
             type="button"
             variant="outline"

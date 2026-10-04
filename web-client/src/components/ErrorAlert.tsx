@@ -29,7 +29,7 @@ export function ErrorAlert({ error, className }: ErrorAlertProps) {
       className={cn(
         'flex gap-3 rounded-md border p-4 text-sm',
         tone === 'blocking'
-          ? 'border-amber-300 bg-amber-50 text-amber-900'
+          ? 'border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 text-amber-900 dark:text-amber-300'
           : 'border-destructive/40 bg-destructive/5 text-destructive',
         className,
       )}
@@ -74,7 +74,7 @@ function describe(error: unknown): {
                   ? `${count} active reservation${count === 1 ? '' : 's'} are associated with this station.`
                   : error.message}
               </p>
-              <p className="text-amber-800">
+              <p className="text-amber-800 dark:text-amber-300">
                 A station cannot be taken out of service while prosumers are still
                 booked onto it. Wait for those reservations to complete or be
                 cancelled, then try again.
@@ -92,7 +92,7 @@ function describe(error: unknown): {
           body: (
             <div className="space-y-1">
               <p>{error.message}</p>
-              <p className="text-amber-800">
+              <p className="text-amber-800 dark:text-amber-300">
                 The station was left active on purpose: taking it offline without
                 knowing its reservations could strand someone already on their way.
               </p>

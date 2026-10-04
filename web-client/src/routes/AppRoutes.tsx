@@ -15,7 +15,6 @@ import { StationScheduleManager } from '../pages/reservation/StationScheduleMana
 import { GridOperatorView } from '../components/GridOperatorView';
 import { BackofficeView } from '../components/BackofficeView';
 import { SessionProvider } from '../context/SessionContext';
-import { AppLayout } from '../components/AppLayout';
 import { StationListPage } from '../pages/StationListPage';
 import { StationFormPage } from '../pages/StationFormPage';
 import { StationDetailPage } from '../pages/StationDetailPage';
@@ -60,9 +59,13 @@ function Placeholder({ title }: { title: string }) {
   );
 }
 
+/**
+ * Station pages are shared by both staff portals, so they render inside
+ * whichever sidebar shell belongs to the signed-in role.
+ */
 function StationManagementLayout() {
   const { user } = useAuth();
-  const Layout = user?.role === 1 ? OperatorLayout : AppLayout;
+  const Layout = user?.role === 1 ? OperatorLayout : BackofficeLayout;
 
   return (
     <SessionProvider>
@@ -119,13 +122,7 @@ export default function AppRoutes() {
 
       {/* Backoffice-only station creation. */}
       <Route element={<ProtectedRoute requiredRole={0} />}>
-        <Route
-          element={
-            <SessionProvider>
-              <AppLayout />
-            </SessionProvider>
-          }
-        >
+        <Route element={<StationManagementLayout />}>
           <Route path="/stations/new" element={<StationFormPage />} />
         </Route>
       </Route>

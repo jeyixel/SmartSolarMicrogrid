@@ -49,7 +49,7 @@ export function DonutGauge({
           r={radius}
           fill="none"
           strokeWidth={strokeWidth}
-          className="stroke-slate-100"
+          className="stroke-slate-100 dark:stroke-slate-800"
         />
         <circle
           cx={size / 2}
@@ -64,11 +64,11 @@ export function DonutGauge({
       </svg>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-display text-2xl font-bold tracking-tight text-slate-900">
+        <span className="font-display text-2xl font-bold tracking-tight text-foreground">
           {label ?? `${Math.round(safeValue)}%`}
         </span>
         {caption && (
-          <span className="mt-0.5 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          <span className="mt-0.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {caption}
           </span>
         )}

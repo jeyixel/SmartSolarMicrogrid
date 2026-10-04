@@ -82,7 +82,7 @@ export function StationListPage() {
       <Card>
         <CardContent className="py-10 text-center text-muted-foreground">
           <p>The station management list is available to Backoffice and Grid Operator roles.</p>
-          <p className="mt-1 text-sm">Switch role in the header to view it.</p>
+          <p className="mt-1 text-sm">Sign in with a staff account to view it.</p>
         </CardContent>
       </Card>
     );

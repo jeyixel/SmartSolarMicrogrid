@@ -24,37 +24,61 @@ export default function BackofficeLayout() {
     navigate('/login', { replace: true });
   }
 
-  const navItems = [
+  const navSections: {
+    title: string;
+    items: { to: string; label: string; icon: React.ReactNode; end?: boolean }[];
+  }[] = [
     {
-      to: '/backoffice/dashboard',
-      label: 'Dashboard',
-      icon: <LayoutDashboard className="h-5 w-5" />,
+      title: 'Overview',
+      items: [
+        {
+          to: '/backoffice/dashboard',
+          label: 'Dashboard',
+          icon: <LayoutDashboard className="h-5 w-5" />,
+        },
+      ],
     },
     {
-      to: '/backoffice/users',
-      label: 'User Directory',
-      icon: <Users className="h-5 w-5" />,
-      end: true,
+      title: 'User Management',
+      items: [
+        {
+          to: '/backoffice/users',
+          label: 'User Directory',
+          icon: <Users className="h-5 w-5" />,
+          end: true,
+        },
+        {
+          to: '/backoffice/users/create',
+          label: 'Create Staff',
+          icon: <UserPlus className="h-5 w-5" />,
+        },
+        {
+          to: '/backoffice/users/pending',
+          label: 'Pending Registrations',
+          icon: <UserCheck className="h-5 w-5" />,
+        },
+        {
+          to: '/backoffice/users/deactivation-requests',
+          label: 'Deactivation Requests',
+          icon: <UserX className="h-5 w-5" />,
+        },
+      ],
     },
     {
-      to: '/backoffice/users/create',
-      label: 'Create Staff',
-      icon: <UserPlus className="h-5 w-5" />,
-    },
-    {
-      to: '/backoffice/users/pending',
-      label: 'Pending Registrations',
-      icon: <UserCheck className="h-5 w-5" />,
-    },
-    {
-      to: '/stations',
-      label: 'Solar Stations',
-      icon: <Sun className="h-5 w-5" />,
-    },
-    {
-      to: '/backoffice/reservations',
-      label: 'All Reservations',
-      icon: <ShieldCheck className="h-5 w-5" />,
+      title: 'Microgrid',
+      items: [
+        {
+          // Matches /stations, /stations/new, /stations/:id and its edit page
+          to: '/stations',
+          label: 'Solar Stations',
+          icon: <Sun className="h-5 w-5" />,
+        },
+        {
+          to: '/backoffice/reservations',
+          label: 'All Reservations',
+          icon: <ShieldCheck className="h-5 w-5" />,
+        },
+      ],
     },
   ];
 
@@ -70,7 +94,7 @@ export default function BackofficeLayout() {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -99,27 +123,31 @@ export default function BackofficeLayout() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
-          <div className="px-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            User Management
-          </div>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={() => setMobileMenuOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </NavLink>
+        <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
+          {navSections.map((section) => (
+            <div key={section.title} className="space-y-1.5">
+              <div className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                {section.title}
+              </div>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`
+                  }
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 

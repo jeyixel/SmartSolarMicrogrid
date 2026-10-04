@@ -140,7 +140,10 @@ export function LocationPicker({
     <div className={cn('space-y-2', className)}>
       <div
         ref={containerRef}
-        className="h-72 w-full overflow-hidden rounded-md border"
+        // `isolate` gives Leaflet its own stacking context: its panes and
+        // controls use z-index 400-1000, which would otherwise paint over
+        // dialogs and the sticky header.
+        className="relative isolate z-0 h-72 w-full overflow-hidden rounded-md border"
         // Leaflet renders into this element directly.
         role="application"
         aria-label={

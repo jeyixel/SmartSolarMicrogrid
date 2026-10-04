@@ -328,7 +328,7 @@ export function StationFormPage() {
       {Boolean(submitError) && <ErrorAlert error={submitError} />}
 
       {isEdit && !canEditFullDetails && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-300">
           As Grid Operator you may update <strong>available battery slots</strong>,{' '}
           <strong>contact phone</strong> and the <strong>operating schedule</strong>. Every
           other field is set by Backoffice and shown here read-only.

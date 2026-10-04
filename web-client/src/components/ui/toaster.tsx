@@ -11,19 +11,19 @@ interface VariantConfig {
 
 const VARIANT_CONFIG: Record<ToastVariant, VariantConfig> = {
   default: {
-    wrapper: 'bg-white border-slate-200',
+    wrapper: 'bg-card border-border',
     icon: CheckCircle2,
     iconClass: 'text-emerald-500',
     borderAccent: 'border-l-emerald-500',
   },
   destructive: {
-    wrapper: 'bg-white border-red-200',
+    wrapper: 'bg-card border-red-200 dark:border-red-500/30',
     icon: AlertCircle,
     iconClass: 'text-red-500',
     borderAccent: 'border-l-red-500',
   },
   warning: {
-    wrapper: 'bg-white border-amber-200',
+    wrapper: 'bg-card border-amber-200 dark:border-amber-500/30',
     icon: AlertTriangle,
     iconClass: 'text-amber-500',
     borderAccent: 'border-l-amber-500',
@@ -65,11 +65,11 @@ export const Toaster: React.FC = () => {
             <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${iconClass}`} />
 
             <div className="flex-1 min-w-0">
-              <p className="text-body-md text-slate-900 font-semibold leading-snug">
+              <p className="text-body-md text-foreground font-semibold leading-snug">
                 {t.title}
               </p>
               {t.description && (
-                <p className="text-body-sm text-slate-600 mt-1 leading-snug">
+                <p className="text-body-sm text-muted-foreground mt-1 leading-snug">
                   {t.description}
                 </p>
               )}
@@ -77,7 +77,7 @@ export const Toaster: React.FC = () => {
 
             <button
               onClick={() => dismiss(t.id)}
-              className="ml-1 p-0.5 flex-shrink-0 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+              className="ml-1 p-0.5 flex-shrink-0 rounded hover:bg-muted text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
               aria-label="Dismiss notification"
             >
               <X className="h-4 w-4" />
