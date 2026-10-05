@@ -1,6 +1,385 @@
-@backend_service_HostAddress = http://localhost:5127
+@host = http://localhost:5127
 
-GET {{backend_service_HostAddress}}/weatherforecast/
-Accept: application/json
+# Identity for local testing. The development header handler reads these two
+# headers and builds a principal from them; once Member 1's authentication is
+# registered, replace them with `Authorization: Bearer {{token}}`.
+@backoffice = X-Debug-Role: Backoffice
+@operator = X-Debug-Role: GridOperator
+@prosumer = X-Debug-Role: Prosumer
 
-###
+# Paste an id returned by "Create station" here to run the single-station calls.
+@stationId = REPLACE_WITH_A_REAL_ID
+
+
+### Create station (Backoffice) → 201
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+X-Debug-UserId: backoffice-001
+
+{
+  "stationCode": "CMB-NORTH-01",
+  "name": "Colombo North Solar Hub",
+  "description": "Rooftop array, Block B",
+  "addressLine": "45 Galle Road, Colombo 03",
+  "latitude": 6.927079,
+  "longitude": 79.861244,
+  "capacityKWh": 250.5,
+  "totalBatterySlots": 20,
+  "availableBatterySlots": 7,
+  "contactPhone": "+94112345678",
+  "operationalSchedule": [
+    { "dayOfWeek": "Monday",    "openTime": "06:00", "closeTime": "20:00" },
+    { "dayOfWeek": "Tuesday",   "openTime": "06:00", "closeTime": "20:00" },
+    { "dayOfWeek": "Wednesday", "openTime": "06:00", "closeTime": "20:00" },
+    { "dayOfWeek": "Thursday",  "openTime": "06:00", "closeTime": "20:00" },
+    { "dayOfWeek": "Friday",    "openTime": "06:00", "closeTime": "20:00" },
+    { "dayOfWeek": "Saturday",  "openTime": "08:00", "closeTime": "17:00" },
+    { "dayOfWeek": "Sunday",    "openTime": "00:00", "closeTime": "00:01", "isClosed": true }
+  ]
+}
+
+
+### Create a second station, for the nearby search → 201
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "CMB-SOUTH-02",
+  "name": "Dehiwala Community Node",
+  "addressLine": "Galle Road, Dehiwala",
+  "latitude": 6.851,
+  "longitude": 79.865,
+  "capacityKWh": 120,
+  "totalBatterySlots": 10,
+  "availableBatterySlots": 4
+}
+
+
+### TC-03 Duplicate station code → 409 DUPLICATE_STATION_CODE
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "cmb-north-01",
+  "name": "Duplicate Attempt",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5
+}
+
+
+### TC-06 Latitude out of range → 400 INVALID_COORDINATES
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "BAD-GPS-01",
+  "name": "Bad Coordinates",
+  "latitude": 95.5,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5
+}
+
+
+### TC-10 Null-island coordinates → 400
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "NULL-ISLAND",
+  "name": "Unset Location",
+  "latitude": 0,
+  "longitude": 0,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5
+}
+
+
+### TC-11 Zero capacity → 400 VALIDATION_ERROR
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "ZERO-CAP",
+  "name": "Zero Capacity",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 0,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5
+}
+
+
+### TC-14 Available slots exceed total → 409 SLOT_INVARIANT_VIOLATED
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "SLOT-BAD",
+  "name": "Slot Invariant",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 10,
+  "availableBatterySlots": 15
+}
+
+
+### TC-18 Closing time before opening time → 409 INVALID_SCHEDULE
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "SCHED-BAD",
+  "name": "Bad Schedule",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5,
+  "operationalSchedule": [
+    { "dayOfWeek": "Monday", "openTime": "20:00", "closeTime": "06:00" }
+  ]
+}
+
+
+### TC-19 Duplicate day in schedule → 409 INVALID_SCHEDULE
+POST {{host}}/api/stations
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "SCHED-DUP",
+  "name": "Duplicate Day",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5,
+  "operationalSchedule": [
+    { "dayOfWeek": "Monday", "openTime": "06:00", "closeTime": "12:00" },
+    { "dayOfWeek": "Monday", "openTime": "13:00", "closeTime": "20:00" }
+  ]
+}
+
+
+### TC-24 Management list, paged → 200
+GET {{host}}/api/stations?page=1&pageSize=5&sortBy=name&sortDir=asc
+{{backoffice}}
+
+
+### TC-25 List filtered by status → 200
+GET {{host}}/api/stations?status=Inactive
+{{backoffice}}
+
+
+### TC-26 Search by name fragment → 200
+GET {{host}}/api/stations?search=Colombo
+{{backoffice}}
+
+
+### TC-27 Page size above the cap → 400
+GET {{host}}/api/stations?pageSize=500
+{{backoffice}}
+
+
+### TC-28 Sort field outside the allow-list → 400
+GET {{host}}/api/stations?sortBy=password
+{{backoffice}}
+
+
+### TC-21 Get station by id → 200 (full document, audit fields present)
+GET {{host}}/api/stations/{{stationId}}
+{{backoffice}}
+
+
+### TC-23 Malformed id → 400
+GET {{host}}/api/stations/123
+{{backoffice}}
+
+
+### TC-22 Unknown id → 404 STATION_NOT_FOUND
+GET {{host}}/api/stations/652f1a9c4e3b2a0d18c7f901
+{{backoffice}}
+
+
+### TC-29 Update station → 200
+PUT {{host}}/api/stations/{{stationId}}
+Content-Type: application/json
+{{backoffice}}
+X-Debug-UserId: backoffice-001
+
+{
+  "name": "Colombo North Solar Hub (Renamed)",
+  "description": "Rooftop array, Block B — expanded",
+  "addressLine": "45 Galle Road, Colombo 03",
+  "latitude": 6.927079,
+  "longitude": 79.861244,
+  "capacityKWh": 300,
+  "totalBatterySlots": 24,
+  "availableBatterySlots": 9,
+  "contactPhone": "+94112345678"
+}
+
+
+### TC-31 Attempt to change the station code → 409 STATION_CODE_IMMUTABLE
+PUT {{host}}/api/stations/{{stationId}}
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "stationCode": "CHANGED-CODE",
+  "name": "Colombo North Solar Hub",
+  "latitude": 6.927079,
+  "longitude": 79.861244,
+  "capacityKWh": 300,
+  "totalBatterySlots": 24,
+  "availableBatterySlots": 9
+}
+
+
+### TC-33 Grid Operator updates an allowed field → 200
+PUT {{host}}/api/stations/{{stationId}}
+Content-Type: application/json
+{{operator}}
+X-Debug-UserId: operator-007
+
+{
+  "name": "Colombo North Solar Hub (Renamed)",
+  "description": "Rooftop array, Block B — expanded",
+  "addressLine": "45 Galle Road, Colombo 03",
+  "latitude": 6.927079,
+  "longitude": 79.861244,
+  "capacityKWh": 300,
+  "totalBatterySlots": 24,
+  "availableBatterySlots": 3,
+  "contactPhone": "+94112345678"
+}
+
+
+### TC-34 Grid Operator changes a restricted field → 403 FORBIDDEN_OPERATION
+PUT {{host}}/api/stations/{{stationId}}
+Content-Type: application/json
+{{operator}}
+
+{
+  "name": "Colombo North Solar Hub (Renamed)",
+  "latitude": 6.927079,
+  "longitude": 79.861244,
+  "capacityKWh": 999,
+  "totalBatterySlots": 24,
+  "availableBatterySlots": 3
+}
+
+
+### TC-44 Deactivation eligibility pre-check → 200
+GET {{host}}/api/stations/{{stationId}}/deactivation-eligibility
+{{backoffice}}
+
+
+### TC-36 Deactivate with no active reservations → 200
+PATCH {{host}}/api/stations/{{stationId}}/deactivate
+Content-Type: application/json
+{{backoffice}}
+X-Debug-UserId: backoffice-001
+
+{
+  "reason": "Inverter replacement"
+}
+
+
+### TC-38 Deactivate an already-inactive station → 409 STATION_ALREADY_INACTIVE
+PATCH {{host}}/api/stations/{{stationId}}/deactivate
+Content-Type: application/json
+{{backoffice}}
+
+{
+  "reason": "Second attempt"
+}
+
+
+### TC-52 Prosumer reads an inactive station → 404 (existence not disclosed)
+GET {{host}}/api/stations/{{stationId}}/details
+{{prosumer}}
+
+
+### TC-42 Reactivate → 200
+PATCH {{host}}/api/stations/{{stationId}}/activate
+{{backoffice}}
+X-Debug-UserId: backoffice-001
+
+
+### TC-43 Reactivate an already-active station → 409 STATION_ALREADY_ACTIVE
+PATCH {{host}}/api/stations/{{stationId}}/activate
+{{backoffice}}
+
+
+### TC-48 Grid Operator attempts deactivation → 403
+PATCH {{host}}/api/stations/{{stationId}}/deactivate
+Content-Type: application/json
+{{operator}}
+
+{ "reason": "Not permitted for this role" }
+
+
+### TC-47 Prosumer attempts to create a station → 403
+POST {{host}}/api/stations
+Content-Type: application/json
+{{prosumer}}
+
+{
+  "stationCode": "PROSUMER-01",
+  "name": "Should Be Rejected",
+  "latitude": 6.93,
+  "longitude": 79.86,
+  "capacityKWh": 100,
+  "totalBatterySlots": 5,
+  "availableBatterySlots": 5
+}
+
+
+### TC-45 No identity at all → 401
+GET {{host}}/api/stations
+
+
+### TC-55 Nearby stations, nearest first → 200
+GET {{host}}/api/stations/nearby?latitude=6.9271&longitude=79.8612&radiusKm=25&limit=50
+{{prosumer}}
+
+
+### TC-57 Nearby with nothing in range → 200 with an empty array
+GET {{host}}/api/stations/nearby?latitude=-33.8688&longitude=151.2093&radiusKm=10
+{{prosumer}}
+
+
+### TC-58 Nearby without coordinates → 400
+GET {{host}}/api/stations/nearby?radiusKm=10
+{{prosumer}}
+
+
+### TC-60 Nearby radius above the cap → 400
+GET {{host}}/api/stations/nearby?latitude=6.9271&longitude=79.8612&radiusKm=5000
+{{prosumer}}
+
+
+### TC-63 Public detail after a marker tap → 200 (no audit fields)
+GET {{host}}/api/stations/{{stationId}}/details
+{{prosumer}}
+
+
+### Lookup for Member 3 / Member 4 dropdowns → 200
+GET {{host}}/api/stations/lookup
+{{prosumer}}

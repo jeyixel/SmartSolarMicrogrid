@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/qrRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/color_background">
+
+    <!-- Top App Bar -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        style="@style/Widget.App.TopBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            style="@style/Widget.App.TopBar.Button"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Back" />
+
+        <TextView
+            style="@style/Widget.App.TopBar.Title"
+            android:text="Digital QR Pass" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/topDivider"
+        style="@style/Widget.App.TopBar.Divider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topBar" />
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topDivider"
+        app:layout_constraintBottom_toTopOf="@id/btnDone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:gravity="center_horizontal">
+
+            <!-- QR Container Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardQrContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/color_surface"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:strokeColor="@color/color_outline"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:padding="20dp">
+
+                    <!-- Station Info -->
+                    <TextView
+                        android:id="@+id/tvStationName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textAlignment="center"
+                        tools:text="Colombo North Solar Hub" />
+
+                    <TextView
+                        android:id="@+id/tvStationCode"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/color_primary"
+                        android:textSize="13sp"
+                        android:fontFamily="monospace"
+                        android:textStyle="bold"
+                        tools:text="Station: CMB-NORTH-01" />
+
+                    <!-- QR Code Image -->
+                    <FrameLayout
+                        android:layout_width="260dp"
+                        android:layout_height="260dp"
+                        android:layout_marginTop="16dp"
+                        android:padding="12dp"
+                        android:background="@drawable/bg_pill_active">
+
+                        <ImageView
+                            android:id="@+id/ivQrCode"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="fitCenter"
+                            android:contentDescription="Reservation QR Code" />
+
+                        <ProgressBar
+                            android:id="@+id/progressBarQr"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/color_primary" />
+                    </FrameLayout>
+
+                    <!-- Monospace Token Reference -->
+                    <TextView
+                        android:id="@+id/tvQrToken"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace"
+                        tools:text="SSM:RES:674A82F1:9B2F3A10" />
+
+                    <!-- Status Badge -->
+                    <TextView
+                        android:id="@+id/tvStatusBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_pill_active"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="5dp"
+                        android:textColor="@color/color_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        tools:text="● APPROVED — READY TO SCAN" />
+
+                    <!-- Divider -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="16dp"
+                        android:background="@color/color_outline" />
+
+                    <!-- Appointment Details Grid -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:baselineAligned="false">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="SCHEDULED SLOT"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvSlotTime"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                tools:text="Today • 14:00 - 15:00" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="end">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ENERGY CAPACITY"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="10sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvEnergyAmount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                tools:text="45.0 kWh" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Instructions Note -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Present this QR code to the station operator upon arrival. The operator will scan it to verify and initiate your energy transfer session."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:textAlignment="center"
+                android:lineSpacingExtra="3dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Done Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDone"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="52dp"
+        android:layout_margin="16dp"
+        android:text="Done"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/color_primary"
+        app:cornerRadius="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation" />
+
+    <!-- Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/color_surface"
+        app:elevation="16dp"
+        app:itemIconTint="@color/color_primary"
+        app:itemTextColor="@color/color_primary"
+        app:itemActiveIndicatorStyle="@style/Widget.Material3.BottomNavigationView.ActiveIndicator"
+        app:menu="@menu/bottom_nav_prosumer"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

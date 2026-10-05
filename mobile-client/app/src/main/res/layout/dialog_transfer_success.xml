@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="@drawable/bg_bottom_sheet_rounded">
+
+    <!-- Success Icon -->
+    <ImageView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:src="@android:drawable/checkbox_on_background"
+        app:tint="@color/color_primary"
+        android:contentDescription="Success" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Transfer Verified &amp; Completed"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="The reservation has been confirmed and updated in real-time."
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:textAlignment="center" />
+
+    <!-- Details Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/color_surface_variant"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/color_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvSuccessProsumer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Prosumer: John Doe (199512345678)" />
+
+            <TextView
+                android:id="@+id/tvSuccessStation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                tools:text="Station: Colombo North Solar Hub" />
+
+            <TextView
+                android:id="@+id/tvSuccessEnergy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/color_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="Transferred: 45.0 kWh (Charging)" />
+
+            <TextView
+                android:id="@+id/tvSuccessStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/color_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:text="Status: ● COMPLETED" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Close Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCloseSuccess"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:text="Complete &amp; Return"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:backgroundTint="@color/color_primary"
+        app:cornerRadius="12dp" />
+
+</LinearLayout>

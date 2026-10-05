@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
+
+// The Maps key lives in local.properties, which is gitignored, so it never
+// reaches the repository. A missing key must not break the build for a
+// teammate who has just cloned: we fall back to an empty string, and the map
+// then fails visibly at runtime instead of failing the whole compile.
+val localProps = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val mapsApiKey: String = localProps.getProperty("MAPS_API_KEY") ?: ""
+val apiBaseUrl: String = localProps.getProperty("API_BASE_URL") ?: "http://10.0.2.2:5127/"
 
 android {
     namespace = "com.example.smartsolarmicrogrid"
@@ -15,15 +30,33 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 10.0.2.2 is how the Android emulator reaches localhost on the host
+        // machine; for physical devices, set API_BASE_URL in local.properties
+        // or use 'adb reverse tcp:5127 tcp:5127'.
+        buildConfigField(
+            "String",
+            "API_BASE_URL",
+            "\"$apiBaseUrl\"",
+        )
+    }
+
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
         }
     }
     compileOptions {
@@ -42,6 +75,22 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+
+    // Member 2 - map, location, REST
+    implementation(libs.play.services.location)
+    implementation(libs.play.services.maps)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Member 4 - QR Code Generation & Scanning
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.android.embedded)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

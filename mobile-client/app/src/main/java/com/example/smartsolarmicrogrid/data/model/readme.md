@@ -1,1 +1,0 @@
-Contains the data classes representing system entities (e.g., Prosumer, Reservation, MicrogridNode)

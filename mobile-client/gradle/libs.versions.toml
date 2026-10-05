@@ -9,6 +9,15 @@ appcompat = "1.7.1"
 material = "1.12.0"
 activity = "1.12.1"
 constraintlayout = "2.2.1"
+# Member 2 - Microgrid Node & Location Services
+osmdroid = "6.1.20"
+playServicesLocation = "21.3.0"
+playServicesMaps = "19.0.0"
+lifecycle = "2.8.7"
+fragmentKtx = "1.8.5"
+retrofit = "2.11.0"
+okhttp = "4.12.0"
+coroutines = "1.9.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -20,7 +29,27 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
+# OpenStreetMap + Fused location provider
+osmdroid = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+
+# ViewModel / lifecycle-aware coroutine scopes
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+
+# REST client
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# Member 4 - QR Code Generation & Operations
+zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.3" }
+zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
+
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
