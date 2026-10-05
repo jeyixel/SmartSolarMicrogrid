@@ -49,11 +49,10 @@ google-services.json
 .externalNativeBuild/
 
 ## ─── Environment / secrets (all projects) ─────────
-.env
-.env.*
 !.env.example
 
 ## ─── OS ───────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+config.bat
