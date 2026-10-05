@@ -10,6 +10,7 @@ import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
 import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
 import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
 import com.example.smartsolarmicrogrid.ui.booking.ReservationQrActivity
 import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
 import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
@@ -57,7 +58,7 @@ object ProsumerNavigator {
         }
     }
 
-    fun openBookings(activity: Activity) = openTab(activity, BookingHistoryActivity::class.java)
+    fun openBookings(activity: Activity) = openTab(activity, CreateBookingActivity::class.java)
 
     /** Brings an already-open tab screen to the front instead of stacking a new copy. */
     private fun openTab(activity: Activity, target: Class<out Activity>) {

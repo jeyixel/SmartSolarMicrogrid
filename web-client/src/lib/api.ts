@@ -218,6 +218,25 @@ export const cancelReservation = async (id: string, userId?: string): Promise<vo
   );
 };
 
+export const approveReservation = async (id: string, userId?: string): Promise<EnergyReservation> => {
+  return handleResponse<EnergyReservation>(
+    await fetch(`${API_BASE_URL}/reservations/${encodeURIComponent(id)}/approve`, {
+      method: 'POST',
+      headers: authHeaders(userId),
+    })
+  );
+};
+
+export const rejectReservation = async (id: string, reason?: string, userId?: string): Promise<EnergyReservation> => {
+  return handleResponse<EnergyReservation>(
+    await fetch(`${API_BASE_URL}/reservations/${encodeURIComponent(id)}/reject`, {
+      method: 'POST',
+      headers: authHeaders(userId),
+      body: JSON.stringify({ reason: reason || 'Rejected by Grid Operator' }),
+    })
+  );
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SolarStations  (/api/stations)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,6 +292,7 @@ export interface ReservationHistoryItem {
   prosumerNIC: string;
   slotId: string;
   stationId: string;
+  stationName?: string;
   startTime: string;
   endTime: string;
   energyAmountKWh: number;

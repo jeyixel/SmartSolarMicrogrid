@@ -27,6 +27,12 @@
             android:text="Booking History" />
 
         <ImageButton
+            android:id="@+id/btnManageReservations"
+            style="@style/Widget.App.TopBar.Button"
+            android:src="@drawable/ic_event"
+            android:contentDescription="Manage Active Bookings" />
+
+        <ImageButton
             android:id="@+id/btnRefresh"
             style="@style/Widget.App.TopBar.Button"
             android:src="@drawable/ic_refresh"

@@ -119,6 +119,7 @@ public class EnergyReservationController : ControllerBase
     /// Pass X-User-Id header to populate audit trail fields.
     /// </summary>
     [HttpDelete("{id}")]
+    [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Delete(
         string id,
         [FromHeader(Name = "X-User-Id")] string? userId = null)
@@ -138,7 +139,8 @@ public class EnergyReservationController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message, rule = "12HourRule" });
+            var rule = ex.Message.Contains("12") ? "12HourRule" : "BusinessRule";
+            return BadRequest(new { error = ex.Message, rule });
         }
     }
 
@@ -201,6 +203,81 @@ public class EnergyReservationController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Approves a pending reservation and generates the dynamic QR pass.
+    /// Can be executed by Grid Operators or Backoffice admins.
+    /// </summary>
+    [HttpPost("{id}/approve")]
+    public async Task<ActionResult<EnergyReservation>> Approve(
+        string id,
+        [FromHeader(Name = "X-User-Id")] string? userId = null)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { error = "Reservation ID parameter cannot be null or empty." });
+        }
+
+        try
+        {
+            var approved = await _reservationService.ApproveReservationAsync(id, userId ?? "GridOperator");
+            return Ok(approved);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message, rule = "ValidationError" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, rule = "ApprovalError" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Rejects a pending reservation, records the rejection reason, and immediately releases the reserved slot capacity back.
+    /// Can be executed by Grid Operators or Backoffice admins.
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    public async Task<ActionResult<EnergyReservation>> Reject(
+        string id,
+        [FromBody] RejectReservationRequestDto? request = null,
+        [FromHeader(Name = "X-User-Id")] string? userId = null)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { error = "Reservation ID parameter cannot be null or empty." });
+        }
+
+        try
+        {
+            var rejected = await _reservationService.RejectReservationAsync(id, request?.Reason, userId ?? "GridOperator");
+            return Ok(rejected);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message, rule = "ValidationError" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, rule = "RejectionError" });
         }
         catch (Exception ex)
         {

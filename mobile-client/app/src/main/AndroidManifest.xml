@@ -87,6 +87,23 @@
             android:screenOrientation="portrait"
             tools:ignore="LockedOrientationActivity" />
 
+        <!-- Member 3: reservation workflow & validation. -->
+        <activity
+            android:name=".ui.booking.CreateBookingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.SlotPickerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.MyReservationsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.EditBookingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.booking.BookingSummaryActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

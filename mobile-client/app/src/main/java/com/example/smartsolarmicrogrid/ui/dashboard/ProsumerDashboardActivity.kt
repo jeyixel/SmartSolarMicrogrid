@@ -20,6 +20,8 @@ import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
 import com.example.smartsolarmicrogrid.data.repository.StationRepository
 import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
 import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
+import com.example.smartsolarmicrogrid.ui.booking.MyReservationsActivity
 import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
@@ -228,17 +230,16 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         findViewById<View>(R.id.tvSeeMap).setOnClickListener(openStations)
         findViewById<View>(R.id.cardMapPlaceholder).setOnClickListener(openStations)
 
-        // Booking starts by picking a station on the map
+        // Member 3 - Book Energy quick action
         val openBooking = View.OnClickListener {
-            Toast.makeText(this, "Pick a station to reserve a slot", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, NearbyStationsActivity::class.java))
+            startActivity(Intent(this, CreateBookingActivity::class.java))
         }
         findViewById<View>(R.id.btnQuickBook).setOnClickListener(openBooking)
         findViewById<View>(R.id.btnBookFromEmpty).setOnClickListener(openBooking)
 
-        // Member 4 - My Bookings and QR quick actions
+        // Member 3 - My Reservations management screen (Modify, Cancel, QR & History)
         findViewById<View>(R.id.btnQuickBookings).setOnClickListener {
-            startActivity(Intent(this, BookingHistoryActivity::class.java))
+            startActivity(Intent(this, MyReservationsActivity::class.java))
         }
         findViewById<View>(R.id.btnQuickQr).setOnClickListener { openNextReservationQr() }
         findViewById<View>(R.id.cardNextTransfer).setOnClickListener {
