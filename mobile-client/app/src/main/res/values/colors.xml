@@ -49,15 +49,23 @@
     <color name="color_error_container">@color/palette_red_50</color>
     <color name="color_error_outline">@color/palette_red_100</color>
 
-    <!-- Added missing colors after dev pull -->
-    <color name="white">#FFFFFF</color>
-    <color name="solar_bg_light">#A5D6A7</color>
-    <color name="card_border">#E0E5E0</color>
+    <!-- Legacy / Compatibility Colors from backup/energy-booking-backup -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
     <color name="solar_green_primary">#0B3B24</color>
-    <color name="solar_green_light">#A5D6A7</color>
-    <color name="error_red">#D32F2F</color>
     <color name="solar_green_secondary">#144D34</color>
+    <color name="solar_green_light">#A5D6A7</color>
+    <color name="solar_green_dark">#003300</color>
+    <color name="solar_teal">#00796B</color>
     <color name="solar_amber">#F57F17</color>
+    <color name="solar_bg_light">#F7F9F7</color>
+    <color name="card_border">#E0E5E0</color>
+    <color name="pill_active_bg">#C8E6C9</color>
+    <color name="pill_active_text">#2E7D32</color>
+    <color name="pill_review_bg">#FFECB3</color>
+    <color name="pill_review_text">#F57F17</color>
+    <color name="map_placeholder_bg">#B2DFDB</color>
+    <color name="error_red">#C62828</color>
     <color name="logout_bg">#FFEBEE</color>
     <color name="logout_border">#FFCDD2</color>
 </resources>
