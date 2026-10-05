@@ -101,6 +101,7 @@
         android:layout_height="50dp"
         android:layout_marginTop="20dp"
         android:text="Complete &amp; Return"
+        android:textColor="@color/color_on_primary"
         android:textSize="15sp"
         android:textStyle="bold"
         app:backgroundTint="@color/color_primary"
