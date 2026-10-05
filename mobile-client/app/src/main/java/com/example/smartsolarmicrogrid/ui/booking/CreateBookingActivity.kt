@@ -103,6 +103,19 @@ class CreateBookingActivity : AppCompatActivity() {
             insets
         }
 
+        // Support preselected station intent extras if passed, while preserving manual selection fallback
+        val preselectedStationId = intent.getStringExtra(EXTRA_STATION_ID)
+            ?: intent.getStringExtra("stationId")
+        val preselectedStationName = intent.getStringExtra(EXTRA_STATION_NAME)
+            ?: intent.getStringExtra("stationName")
+
+        if (!preselectedStationId.isNullOrBlank()) {
+            selectedStationId = preselectedStationId
+        }
+        if (!preselectedStationName.isNullOrBlank()) {
+            selectedStationName = preselectedStationName
+        }
+
         authSessionDao = AuthSessionDao(this)
         tokenManager = TokenManager(this)
         ApiConfig.init(this)
@@ -400,5 +413,10 @@ class CreateBookingActivity : AppCompatActivity() {
         } catch (e: Exception) {
             if (startIso.isNotBlank()) startIso else "Scheduled Window"
         }
+    }
+
+    companion object {
+        const val EXTRA_STATION_ID = "EXTRA_STATION_ID"
+        const val EXTRA_STATION_NAME = "EXTRA_STATION_NAME"
     }
 }

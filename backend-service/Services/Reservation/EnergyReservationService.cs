@@ -194,6 +194,12 @@ public class EnergyReservationService : IEnergyReservationService
         if (reservation == null)
             throw new KeyNotFoundException($"Reservation '{id}' not found.");
 
+        if (string.Equals(reservation.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Reservation is already cancelled.");
+
+        if (string.Equals(reservation.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Completed reservations cannot be cancelled.");
+
         // ─── 12-Hour Cancellation Rule ──────────────────────────────────────────
         var timeUntilStart = reservation.SlotStartTime - DateTime.UtcNow;
         if (timeUntilStart.TotalHours < 12)

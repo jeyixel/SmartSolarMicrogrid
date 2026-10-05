@@ -230,33 +230,16 @@ class ProsumerDashboardActivity : AppCompatActivity() {
         findViewById<View>(R.id.tvSeeMap).setOnClickListener(openStations)
         findViewById<View>(R.id.cardMapPlaceholder).setOnClickListener(openStations)
 
-        // Booking starts by picking a station on the map
+        // Member 3 - Book Energy quick action
         val openBooking = View.OnClickListener {
-            Toast.makeText(this, "Pick a station to reserve a slot", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, NearbyStationsActivity::class.java))
+            startActivity(Intent(this, CreateBookingActivity::class.java))
         }
         findViewById<View>(R.id.btnQuickBook).setOnClickListener(openBooking)
         findViewById<View>(R.id.btnBookFromEmpty).setOnClickListener(openBooking)
 
-        // --- COMMENTED OUT HEAD LOGIC FOR REFERENCE (This was previous code for member 3, commented out to prioratize member 4's mapping) ---
-        // findViewById<View>(R.id.cardMapPlaceholder)?.setOnClickListener {
-        //     startActivity(Intent(this, NearbyStationsActivity::class.java))
-        // }
-        //
-        // // Member 3 - Book Energy quick action
-        // findViewById<View>(R.id.btnQuickBook)?.setOnClickListener {
-        //     startActivity(Intent(this, CreateBookingActivity::class.java))
-        // }
-        //
-        // // Member 4 - My Bookings quick action
-        // findViewById<View>(R.id.btnQuickBookings)?.setOnClickListener {
-        //     startActivity(Intent(this, MyReservationsActivity::class.java))
-        // }
-        // ----------------------------------------------
-
-        // Member 4 - My Bookings and QR quick actions
+        // Member 3 - My Reservations management screen (Modify, Cancel, QR & History)
         findViewById<View>(R.id.btnQuickBookings).setOnClickListener {
-            startActivity(Intent(this, BookingHistoryActivity::class.java))
+            startActivity(Intent(this, MyReservationsActivity::class.java))
         }
         findViewById<View>(R.id.btnQuickQr).setOnClickListener { openNextReservationQr() }
         findViewById<View>(R.id.cardNextTransfer).setOnClickListener {

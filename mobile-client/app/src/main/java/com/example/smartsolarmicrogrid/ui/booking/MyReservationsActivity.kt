@@ -31,6 +31,7 @@ import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
 import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
 import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.concurrent.Executors
 
 /**
@@ -45,6 +46,7 @@ class MyReservationsActivity : AppCompatActivity() {
     private lateinit var rvMyReservations: RecyclerView
     private lateinit var layoutEmptyReservations: LinearLayout
     private lateinit var btnEmptyBookEnergy: MaterialButton
+    private lateinit var fabAddReservation: FloatingActionButton
 
     private lateinit var adapter: MyReservationsAdapter
     private lateinit var authSessionDao: AuthSessionDao
@@ -90,6 +92,7 @@ class MyReservationsActivity : AppCompatActivity() {
         rvMyReservations = findViewById(R.id.rvMyReservations)
         layoutEmptyReservations = findViewById(R.id.layoutEmptyReservations)
         btnEmptyBookEnergy = findViewById(R.id.btnEmptyBookEnergy)
+        fabAddReservation = findViewById(R.id.fabAddReservation)
 
         adapter = MyReservationsAdapter(
             items = emptyList(),
@@ -120,6 +123,11 @@ class MyReservationsActivity : AppCompatActivity() {
         }
 
         btnEmptyBookEnergy.setOnClickListener {
+            startActivity(Intent(this, CreateBookingActivity::class.java))
+        }
+
+        // Floating Action Button - Direct manual booking flow
+        fabAddReservation.setOnClickListener {
             startActivity(Intent(this, CreateBookingActivity::class.java))
         }
     }

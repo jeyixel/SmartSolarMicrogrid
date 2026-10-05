@@ -1,8 +1,10 @@
 package com.example.smartsolarmicrogrid.ui.booking
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import java.util.Locale
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
@@ -32,6 +34,7 @@ import java.util.concurrent.Executors
 class BookingHistoryActivity : AppCompatActivity() {
 
     private lateinit var btnBack: ImageView
+    private lateinit var btnManageReservations: ImageView
     private lateinit var btnRefresh: ImageView
     private lateinit var etSearch: EditText
     private lateinit var btnClearSearch: ImageView
@@ -62,7 +65,8 @@ class BookingHistoryActivity : AppCompatActivity() {
             insets
         }
 
-        ProsumerNavigator.setupBottomNav(this, findViewById(R.id.bottomNavigation), R.id.nav_bookings)
+        // Pass 0 so nav_bookings is not highlighted as current screen on History
+        ProsumerNavigator.setupBottomNav(this, findViewById(R.id.bottomNavigation), 0)
 
         authSessionDao = AuthSessionDao(this)
         tokenManager = TokenManager(this)
@@ -75,6 +79,7 @@ class BookingHistoryActivity : AppCompatActivity() {
 
     private fun initViews() {
         btnBack = findViewById(R.id.btnBack)
+        btnManageReservations = findViewById(R.id.btnManageReservations)
         btnRefresh = findViewById(R.id.btnRefresh)
         etSearch = findViewById(R.id.etSearch)
         btnClearSearch = findViewById(R.id.btnClearSearch)
@@ -84,10 +89,7 @@ class BookingHistoryActivity : AppCompatActivity() {
         layoutEmptyState = findViewById(R.id.layoutEmptyState)
 
         adapter = BookingHistoryAdapter { item ->
-            val intent = android.content.Intent(this, ReservationQrActivity::class.java).apply {
-                putExtra(ReservationQrActivity.EXTRA_RESERVATION_ID, item.id)
-            }
-            startActivity(intent)
+            handleHistoryItemClick(item)
         }
 
         rvBookingHistory.layoutManager = LinearLayoutManager(this)
@@ -97,6 +99,10 @@ class BookingHistoryActivity : AppCompatActivity() {
     private fun setupListeners() {
         btnBack.setOnClickListener {
             finish()
+        }
+
+        btnManageReservations.setOnClickListener {
+            startActivity(Intent(this, MyReservationsActivity::class.java))
         }
 
         btnRefresh.setOnClickListener {
@@ -176,5 +182,105 @@ class BookingHistoryActivity : AppCompatActivity() {
                 else -> {}
             }
         }
+    }
+
+    private fun handleHistoryItemClick(item: ReservationHistoryDto) {
+        val status = item.status.lowercase(Locale.getDefault())
+        val shortId = if (item.id.length >= 8) item.id.takeLast(8).uppercase(Locale.getDefault()) else item.id
+        val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
+
+        val options = mutableListOf<String>()
+        if (status == "approved") {
+            options.add("View QR Pass")
+        }
+        if (status == "pending" || status == "approved") {
+            options.add("Cancel Reservation")
+            options.add("Manage in My Reservations")
+        } else {
+            options.add("View Details")
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("$displayName (#$shortId)")
+            .setItems(options.toTypedArray()) { _, which ->
+                when (options[which]) {
+                    "View QR Pass" -> {
+                        val intent = Intent(this, ReservationQrActivity::class.java).apply {
+                            putExtra(ReservationQrActivity.EXTRA_RESERVATION_ID, item.id)
+                        }
+                        startActivity(intent)
+                    }
+                    "Cancel Reservation" -> {
+                        confirmCancelFromHistory(item)
+                    }
+                    "Manage in My Reservations" -> {
+                        startActivity(Intent(this, MyReservationsActivity::class.java))
+                    }
+                    "View Details" -> {
+                        showDetailsDialog(item)
+                    }
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun confirmCancelFromHistory(item: ReservationHistoryDto) {
+        val shortId = if (item.id.length >= 8) item.id.takeLast(8).uppercase(Locale.getDefault()) else item.id
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Cancel Reservation")
+            .setMessage("Are you sure you want to cancel reservation #$shortId?\n\nThis will release the microgrid slot capacity.")
+            .setPositiveButton("Yes, Cancel") { _, _ ->
+                progressBar.visibility = View.VISIBLE
+                reservationApiClient.cancelReservation(
+                    reservationId = item.id,
+                    userId = currentNIC,
+                    authToken = currentToken
+                ) { response ->
+                    progressBar.visibility = View.GONE
+                    when (response) {
+                        is ApiResponse.Success -> {
+                            Toast.makeText(this, "Reservation cancelled successfully.", Toast.LENGTH_SHORT).show()
+                            fetchHistory()
+                            val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
+                            val intent = Intent(this, BookingSummaryActivity::class.java).apply {
+                                putExtra(BookingSummaryActivity.EXTRA_ACTION_TYPE, BookingSummaryActivity.ACTION_CANCEL)
+                                putExtra(BookingSummaryActivity.EXTRA_RESERVATION_ID, item.id)
+                                putExtra(BookingSummaryActivity.EXTRA_STATION_NAME, displayName)
+                                putExtra(BookingSummaryActivity.EXTRA_SLOT_TIME, item.startTime)
+                                putExtra(BookingSummaryActivity.EXTRA_ENERGY_KWH, item.energyAmountKWh)
+                                putExtra(BookingSummaryActivity.EXTRA_STATUS, "Cancelled")
+                                putExtra(BookingSummaryActivity.EXTRA_PROSUMER_NIC, currentNIC)
+                            }
+                            startActivity(intent)
+                        }
+                        is ApiResponse.ServerError -> {
+                            androidx.appcompat.app.AlertDialog.Builder(this)
+                                .setTitle("Cancellation Failed")
+                                .setMessage(response.message)
+                                .setPositiveButton("OK", null)
+                                .show()
+                        }
+                        is ApiResponse.NetworkFailure -> {
+                            Toast.makeText(this, "Network connection error.", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            Toast.makeText(this, "Unable to cancel reservation.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Keep Reservation", null)
+            .show()
+    }
+
+    private fun showDetailsDialog(item: ReservationHistoryDto) {
+        val shortId = if (item.id.length >= 8) item.id.takeLast(8).uppercase(Locale.getDefault()) else item.id
+        val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Reservation #$shortId")
+            .setMessage("Station: $displayName\nStatus: ${item.status}\nEnergy: ${item.energyAmountKWh} kWh\nAction: ${item.actionType}\nTime: ${item.startTime}")
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

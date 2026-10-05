@@ -119,6 +119,7 @@ public class EnergyReservationController : ControllerBase
     /// Pass X-User-Id header to populate audit trail fields.
     /// </summary>
     [HttpDelete("{id}")]
+    [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Delete(
         string id,
         [FromHeader(Name = "X-User-Id")] string? userId = null)
@@ -138,7 +139,8 @@ public class EnergyReservationController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message, rule = "12HourRule" });
+            var rule = ex.Message.Contains("12") ? "12HourRule" : "BusinessRule";
+            return BadRequest(new { error = ex.Message, rule });
         }
     }
 
