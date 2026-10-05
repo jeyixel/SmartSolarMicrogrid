@@ -429,13 +429,13 @@
                 <LinearLayout
                     android:id="@+id/btnQuickBookings"
                     style="@style/Widget.App.Dashboard.QuickAction"
-                    android:contentDescription="My bookings">
+                    android:contentDescription="Booking history">
                     <ImageView
                         style="@style/Widget.App.Dashboard.QuickActionIcon"
                         android:src="@drawable/ic_event" />
                     <TextView
                         style="@style/Widget.App.Dashboard.QuickActionLabel"
-                        android:text="Bookings" />
+                        android:text="History" />
                 </LinearLayout>
 
                 <LinearLayout
