@@ -59,7 +59,7 @@ export default function GridOperatorLayout() {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -73,7 +73,7 @@ export default function GridOperatorLayout() {
               <Zap className="h-5 w-5 fill-slate-900" />
             </div>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold tracking-wide">SmartSolar</span>
+              <span className="block text-sm font-semibold tracking-wide">GridPulse</span>
               <span className="block text-xs font-normal text-emerald-400">Grid Operations</span>
             </div>
           </Link>
@@ -178,7 +178,7 @@ export default function GridOperatorLayout() {
         </header>
 
         {/* Page Content View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-screen-2xl w-full mx-auto">
           <Outlet />
         </main>
       </div>

@@ -355,5 +355,36 @@ export const generateReservationQr = async (reservationId: string): Promise<QrCo
   );
 };
 
+export interface EnergyTransferResult {
+  success: boolean;
+  message: string;
+  reservationId: string;
+  reservationCode: string;
+  prosumerNIC: string;
+  prosumerName: string;
+  stationId: string;
+  stationName: string;
+  transferredKWh: number;
+  actionType: string;
+  previousStatus: string;
+  newStatus: string;
+  verifiedAtUtc: string;
+}
+
+export const verifyAndFinalizeQrTransfer = async (
+  qrToken: string,
+  operatorUserId?: string,
+  stationId?: string
+): Promise<EnergyTransferResult> => {
+  return handleResponse<EnergyTransferResult>(
+    await fetch(`${API_BASE_URL}/reservations/verify-qr`, {
+      method: 'POST',
+      headers: authHeaders(operatorUserId),
+      body: JSON.stringify({ qrToken, operatorUserId, stationId }),
+    })
+  );
+};
+
+
 
 

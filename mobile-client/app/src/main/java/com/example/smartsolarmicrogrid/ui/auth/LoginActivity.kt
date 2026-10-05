@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import com.example.smartsolarmicrogrid.R
@@ -32,7 +31,7 @@ import com.google.android.material.textfield.TextInputLayout
 import java.util.concurrent.Executors
 
 /**
- * Entry-point Login activity for the Smart Solar Microgrid mobile application.
+ * Entry-point Login activity for the GridPulse mobile application.
  *
  * Startup & Remembered Login Handshake:
  * 1. Read local cached row with readSessionResult().
@@ -63,10 +62,6 @@ class LoginActivity : AppCompatActivity() {
         ApiConfig.init(this)
         authApiClient = AuthApiClient(ApiConfig.getBaseUrl())
         enableEdgeToEdge()
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = true
-            isAppearanceLightNavigationBars = true
-        }
         setContentView(R.layout.activity_login)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.loginScrollRoot)) { v, insets ->

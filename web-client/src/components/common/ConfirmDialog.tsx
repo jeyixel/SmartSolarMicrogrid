@@ -36,7 +36,7 @@ export default function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm">
       <div
-        className="w-full max-w-md transform rounded-xl bg-white p-6 shadow-2xl transition-all"
+        className="w-full max-w-md transform rounded-xl bg-card p-6 shadow-2xl transition-all"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
@@ -45,29 +45,29 @@ export default function ConfirmDialog({
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
               variant === 'danger'
-                ? 'bg-rose-100 text-rose-600'
+                ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
                 : variant === 'warning'
-                ? 'bg-amber-100 text-amber-600'
+                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
                 : variant === 'success'
-                ? 'bg-emerald-100 text-emerald-600'
-                : 'bg-blue-100 text-blue-600'
+                ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400'
             }`}
           >
             <AlertTriangle className="h-5 w-5" />
           </div>
-          <h2 id="dialog-title" className="text-lg font-semibold text-slate-900">
+          <h2 id="dialog-title" className="text-lg font-semibold text-foreground">
             {title}
           </h2>
         </div>
 
-        <p className="mt-3 text-sm text-slate-600">{description}</p>
+        <p className="mt-3 text-sm text-muted-foreground">{description}</p>
 
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             disabled={isLoading}
             onClick={onCancel}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50"
+            className="rounded-lg border border-input bg-card px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-background focus:outline-none focus:ring-2 focus:ring-slate-500 disabled:opacity-50"
           >
             {cancelText}
           </button>

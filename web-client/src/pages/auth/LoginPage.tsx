@@ -49,7 +49,7 @@ export default function LoginPage() {
         className="w-full max-w-md space-y-5 rounded-xl bg-white p-8 shadow"
       >
         <div>
-          <h1 className="text-2xl font-bold">Smart Solar Microgrid</h1>
+          <h1 className="text-2xl font-bold">GridPulse</h1>
           <p className="mt-1 text-slate-600">Sign in to your account</p>
         </div>
 

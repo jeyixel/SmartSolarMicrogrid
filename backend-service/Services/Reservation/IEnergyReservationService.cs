@@ -15,4 +15,5 @@ public interface IEnergyReservationService
     Task<QrCodeDetailsDto> GenerateOrGetQrCodeAsync(string reservationId);
     Task<EnergyReservation> ApproveReservationAsync(string id, string approvedByUserId);
     Task<EnergyReservation> RejectReservationAsync(string id, string? reason, string rejectedByUserId);
+    Task<EnergyTransferResultDto> VerifyAndFinalizeTransferAsync(VerifyQrRequestDto request);
 }

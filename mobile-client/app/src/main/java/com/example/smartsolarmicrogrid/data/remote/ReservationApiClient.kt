@@ -27,7 +27,7 @@ import java.util.concurrent.Executors
  * Strictly adheres to pure Android architecture without third-party network frameworks.
  */
 class ReservationApiClient(
-    private val baseUrl: String = DEFAULT_BASE_URL
+    private val baseUrl: String = ApiConfig.getBaseUrl()
 ) {
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -449,7 +449,7 @@ class ReservationApiClient(
     }
 
     /**
-     * Member 3: Updates an existing reservation's slot or requested capacity.
+     * Updates an existing reservation's slot or requested capacity.
      * Enforces the 12-hour modification rule and capacity reallocation on the FAT Web API.
      * Calls PUT /api/reservations/{id}.
      */
@@ -514,7 +514,7 @@ class ReservationApiClient(
     }
 
     /**
-     * Member 3: Cancels an active reservation and releases its slot capacity.
+     * Cancels an active reservation and releases its slot capacity.
      * Enforces the 12-hour cancellation rule on the FAT Web API.
      * Calls DELETE /api/reservations/{id}.
      */
@@ -569,6 +569,75 @@ class ReservationApiClient(
         }
     }
 
+    /**
+     * Verifies a scanned QR code token and completes the energy transfer session.
+     */
+    fun verifyQrTransfer(
+        qrToken: String,
+        operatorUserId: String? = null,
+        stationId: String? = null,
+        authToken: String? = null,
+        callback: (ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.EnergyTransferResultDto>) -> Unit
+    ) {
+        executor.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                val endpointUrl = URL("${baseUrl}api/reservations/verify-qr")
+                connection = (endpointUrl.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = CONNECT_TIMEOUT_MS
+                    readTimeout = READ_TIMEOUT_MS
+                    doInput = true
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Accept", "application/json")
+                    if (!authToken.isNullOrBlank()) {
+                        setRequestProperty("Authorization", "Bearer $authToken")
+                    }
+                }
+
+                val requestJson = JSONObject().apply {
+                    put("qrToken", qrToken)
+                    if (!operatorUserId.isNullOrBlank()) put("operatorUserId", operatorUserId)
+                    if (!stationId.isNullOrBlank()) put("stationId", stationId)
+                }
+
+                connection.outputStream.use { os ->
+                    os.write(requestJson.toString().toByteArray(Charsets.UTF_8))
+                    os.flush()
+                }
+
+                val responseCode = connection.responseCode
+                val stream = if (responseCode in 200..299) connection.inputStream else connection.errorStream
+                val responseBody = readStream(stream)
+
+                Log.d(TAG, "verifyQrTransfer status: $responseCode, response: $responseBody")
+
+                val result: ApiResponse<com.example.smartsolarmicrogrid.data.remote.dto.EnergyTransferResultDto> = when (responseCode) {
+                    200 -> {
+                        val json = JSONObject(responseBody)
+                        val dto = com.example.smartsolarmicrogrid.data.remote.dto.EnergyTransferResultDto.fromJson(json)
+                        ApiResponse.Success(dto, responseCode)
+                    }
+                    in 400..499 -> {
+                        val message = parseErrorMessage(responseBody) ?: "Unable to verify energy transfer pass."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                    else -> {
+                        val message = parseErrorMessage(responseBody) ?: "Server error occurred ($responseCode)."
+                        ApiResponse.ServerError(message, responseCode)
+                    }
+                }
+                postResult(result, callback)
+            } catch (e: Exception) {
+                Log.e(TAG, "Network failure in verifyQrTransfer", e)
+                postResult(ApiResponse.NetworkFailure(e), callback)
+            } finally {
+                connection?.disconnect()
+            }
+        }
+    }
+
     private fun readStream(stream: InputStream?): String {
         if (stream == null) return ""
         return BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).use { reader ->
@@ -598,7 +667,6 @@ class ReservationApiClient(
 
     companion object {
         private const val TAG = "ReservationApiClient"
-        const val DEFAULT_BASE_URL = "http://10.0.2.2:5127/"
         private const val CONNECT_TIMEOUT_MS = 10000
         private const val READ_TIMEOUT_MS = 10000
     }

@@ -96,13 +96,13 @@ export const GridOperatorView: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-headline-lg text-slate-900">Slot Management</h2>
+        <h2 className="text-headline-lg text-foreground">Slot Management</h2>
         <p className="text-body-sm text-muted-foreground mt-0.5">
           Create and manage charging and battery swap time windows at microgrid stations.
         </p>
       </div>
 
-      <Card className="rounded-lg border border-slate-200 bg-white shadow-none">
+      <Card className="rounded-lg border border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-headline-sm flex items-center gap-2">
             <Plus className="h-4 w-4 text-primary" />
@@ -111,7 +111,7 @@ export const GridOperatorView: React.FC = () => {
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
           <div>
-            <label className="text-label-sm text-slate-700 block mb-1">Station</label>
+            <label className="text-label-sm text-slate-700 dark:text-slate-300 block mb-1">Station</label>
             <Select value={selectedStationId} onChange={e => setSelectedStationId(e.target.value)}>
               {stations.map(s => (
                 <option key={s.id} value={s.id}>{s.stationCode}</option>
@@ -119,7 +119,7 @@ export const GridOperatorView: React.FC = () => {
             </Select>
           </div>
           <div>
-            <label className="text-label-sm text-slate-700 block mb-1">Trade Type</label>
+            <label className="text-label-sm text-slate-700 dark:text-slate-300 block mb-1">Trade Type</label>
             <Select value={tradeType} onChange={e => setTradeType(e.target.value as any)}>
               <option value="Charging">Charging</option>
               <option value="Discharging">Discharging</option>
@@ -128,15 +128,15 @@ export const GridOperatorView: React.FC = () => {
             </Select>
           </div>
           <div>
-            <label className="text-label-sm text-slate-700 block mb-1">Start Time</label>
+            <label className="text-label-sm text-slate-700 dark:text-slate-300 block mb-1">Start Time</label>
             <Input type="datetime-local" value={newSlotStart} onChange={e => setNewSlotStart(e.target.value)} />
           </div>
           <div>
-            <label className="text-label-sm text-slate-700 block mb-1">End Time</label>
+            <label className="text-label-sm text-slate-700 dark:text-slate-300 block mb-1">End Time</label>
             <Input type="datetime-local" value={newSlotEnd} onChange={e => setNewSlotEnd(e.target.value)} />
           </div>
           <div>
-            <label className="text-label-sm text-slate-700 block mb-1">Slots</label>
+            <label className="text-label-sm text-slate-700 dark:text-slate-300 block mb-1">Slots</label>
             <Input type="number" min={1} value={newSlots} onChange={e => setNewSlots(e.target.value)} />
           </div>
           <div>
@@ -156,14 +156,14 @@ export const GridOperatorView: React.FC = () => {
           <p className="text-body-sm text-muted-foreground">No booking slots found.</p>
         ) : (
           slots.map(slot => (
-            <Card key={slot.id} className="rounded-lg border border-slate-200 bg-white shadow-none">
+            <Card key={slot.id} className="rounded-lg border border-border bg-card shadow-none">
               <CardHeader className="pb-2">
                 <CardTitle className="text-headline-sm font-mono text-xs flex justify-between items-center">
                   <span>{slot.stationName || slot.stationId}</span>
                   <span className={`px-2 py-0.5 rounded text-label-sm font-semibold uppercase ${
-                    slot.status === 'Open' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    slot.status === 'Full' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                    'bg-slate-100 text-slate-700 border border-slate-200'
+                    slot.status === 'Open' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' :
+                    slot.status === 'Full' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30' :
+                    'bg-muted text-slate-700 dark:text-slate-300 border border-border'
                   }`}>
                     {slot.status}
                   </span>
@@ -172,19 +172,19 @@ export const GridOperatorView: React.FC = () => {
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="text-muted-foreground">Trade Type:</span>
-                  <span className="font-medium text-slate-900">{slot.tradeType}</span>
+                  <span className="font-medium text-foreground">{slot.tradeType}</span>
                 </div>
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="text-muted-foreground">Capacity:</span>
-                  <span className="font-mono text-slate-900">{slot.totalCapacityKWh} kWh</span>
+                  <span className="font-mono text-foreground">{slot.totalCapacityKWh} kWh</span>
                 </div>
                 <div className="flex items-center justify-between text-body-sm">
                   <span className="text-muted-foreground">Available Bays:</span>
-                  <span className="font-mono font-medium text-slate-900">
+                  <span className="font-mono font-medium text-foreground">
                     {slot.availableBatterySlots} / {slot.totalBatterySlots}
                   </span>
                 </div>
-                <p className="text-body-sm font-mono text-xs text-muted-foreground pt-1 border-t border-slate-100">
+                <p className="text-body-sm font-mono text-xs text-muted-foreground pt-1 border-t border-slate-100 dark:border-slate-800">
                   {new Date(slot.startTime).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
                   {' → '}
                   {new Date(slot.endTime).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router';
 import {
   CalendarClock,
   CalendarOff,
+  History,
   LayoutDashboard,
   Layers,
   ListChecks,
@@ -13,7 +14,9 @@ import {
   X,
 } from 'lucide-react';
 
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/hooks/useTheme';
 
 /**
  * Grid Operator shell: the same fixed dark sidebar, mobile drawer and sticky
@@ -25,6 +28,7 @@ export default function OperatorLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { preference, setPreference } = useTheme('operator-theme');
 
   function handleLogout() {
     logout();
@@ -49,6 +53,11 @@ export default function OperatorLayout() {
       icon: <CalendarClock className="h-5 w-5" />,
     },
     {
+      to: '/operator/history',
+      label: 'Booking History',
+      icon: <History className="h-5 w-5" />,
+    },
+    {
       to: '/operator/stations',
       label: 'Station Schedules',
       icon: <CalendarOff className="h-5 w-5" />,
@@ -61,7 +70,7 @@ export default function OperatorLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen bg-background text-foreground">
       {/* Mobile backdrop */}
       {mobileMenuOpen && (
         <div
@@ -72,7 +81,7 @@ export default function OperatorLayout() {
 
       {/* Sidebar Navigation */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -86,7 +95,7 @@ export default function OperatorLayout() {
               <Sun className="h-5 w-5" />
             </div>
             <div className="leading-tight">
-              <span className="block text-sm font-semibold">SmartSolar</span>
+              <span className="block text-sm font-semibold">GridPulse</span>
               <span className="block text-xs font-normal text-emerald-400">Grid Operator</span>
             </div>
           </Link>
@@ -150,31 +159,32 @@ export default function OperatorLayout() {
       {/* Main Content Layout */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+              className="rounded-lg p-2 text-muted-foreground hover:bg-muted lg:hidden"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-600 bg-slate-100 py-1 px-2.5 rounded-full">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted py-1 px-2.5 rounded-full">
               <Radio className="h-4 w-4 text-emerald-600" />
               <span>Grid Operator Portal</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <ThemeToggle value={preference} onChange={setPreference} />
             <div className="text-right">
-              <p className="text-xs font-semibold text-slate-800">{user?.fullName}</p>
-              <p className="text-[11px] text-slate-500">NIC: {user?.nic}</p>
+              <p className="text-xs font-semibold text-foreground">{user?.fullName}</p>
+              <p className="text-[11px] text-muted-foreground">NIC: {user?.nic}</p>
             </div>
             <button
               type="button"
               onClick={handleLogout}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-600 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted hover:text-rose-600 transition-colors"
             >
               <LogOut className="h-3.5 w-3.5" />
               <span>Logout</span>
@@ -183,7 +193,7 @@ export default function OperatorLayout() {
         </header>
 
         {/* Page Content View */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-screen-2xl w-full mx-auto">
           <Outlet />
         </main>
       </div>

@@ -476,4 +476,92 @@ public class EnergyReservationService : IEnergyReservationService
             GeneratedAtUtc = reservation.QrCodeGeneratedAtUtc ?? DateTime.UtcNow
         };
     }
+
+    /// <summary>
+    /// Verifies a scanned QR code token presented by a prosumer at a solar station.
+    /// Transitions reservation status to "Completed" and stamps operator audit fields.
+    /// </summary>
+    public async Task<EnergyTransferResultDto> VerifyAndFinalizeTransferAsync(VerifyQrRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.QrToken))
+        {
+            throw new ArgumentException("QR Code token cannot be empty.", nameof(request.QrToken));
+        }
+
+        var token = request.QrToken.Trim();
+        var allReservations = await _reservationRepo.GetAllAsync();
+
+        // Match by exact QrCodeToken or by parsed ReservationCode / Id
+        var reservation = allReservations.FirstOrDefault(r => 
+            string.Equals(r.QrCodeToken, token, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(r.ReservationCode) && token.Contains(r.ReservationCode, StringComparison.OrdinalIgnoreCase)) ||
+            (!string.IsNullOrEmpty(r.Id) && token.Contains(r.Id, StringComparison.OrdinalIgnoreCase)));
+
+        if (reservation == null)
+        {
+            return new EnergyTransferResultDto
+            {
+                Success = false,
+                Message = "Invalid QR code. No matching energy reservation was found in the system."
+            };
+        }
+
+        if (string.Equals(reservation.Status, "Cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            return new EnergyTransferResultDto
+            {
+                Success = false,
+                ReservationId = reservation.Id,
+                ReservationCode = reservation.ReservationCode,
+                ProsumerNIC = reservation.ProsumerNIC,
+                Message = "Verification rejected: This reservation has been cancelled."
+            };
+        }
+
+        if (string.Equals(reservation.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            return new EnergyTransferResultDto
+            {
+                Success = false,
+                ReservationId = reservation.Id,
+                ReservationCode = reservation.ReservationCode,
+                ProsumerNIC = reservation.ProsumerNIC,
+                Message = $"Energy transfer already completed on {reservation.QrCodeVerifiedAtUtc:dd MMM yyyy HH:mm} UTC."
+            };
+        }
+
+        var previousStatus = reservation.Status;
+        reservation.Status = "Completed";
+        reservation.QrCodeVerifiedAtUtc = DateTime.UtcNow;
+        reservation.QrCodeVerifiedByUserId = !string.IsNullOrWhiteSpace(request.OperatorUserId) 
+            ? request.OperatorUserId 
+            : "GridOperator";
+        reservation.LastModifiedAtUtc = DateTime.UtcNow;
+
+        await _reservationRepo.UpdateAsync(reservation.Id, reservation);
+
+        // Fetch physical slot details to enrich result
+        var slot = await _slotRepo.GetByIdAsync(reservation.SlotId);
+        var stationId = !string.IsNullOrWhiteSpace(reservation.StationId) ? reservation.StationId : (slot?.StationId ?? "N/A");
+        var stationName = !string.IsNullOrWhiteSpace(reservation.StationName) ? reservation.StationName : (slot?.StationName ?? stationId);
+        var actionType = slot?.TradeType ?? "Charging";
+        var energyAmount = reservation.RequestedKWh > 0 ? reservation.RequestedKWh : (slot?.TotalCapacityKWh ?? 0);
+
+        return new EnergyTransferResultDto
+        {
+            Success = true,
+            Message = "Energy transfer verified and session marked as COMPLETED successfully.",
+            ReservationId = reservation.Id,
+            ReservationCode = reservation.ReservationCode,
+            ProsumerNIC = reservation.ProsumerNIC,
+            ProsumerName = reservation.ProsumerName,
+            StationId = stationId,
+            StationName = stationName,
+            TransferredKWh = energyAmount,
+            ActionType = actionType,
+            PreviousStatus = previousStatus,
+            NewStatus = "Completed",
+            VerifiedAtUtc = reservation.QrCodeVerifiedAtUtc.Value
+        };
+    }
 }

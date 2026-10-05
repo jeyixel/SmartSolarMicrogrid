@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Loader2, Map, MapPin, Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Loader2, Map, MapPin, Pencil, Plus, Search } from 'lucide-react';
 
 import { stationsApi } from '@/api/client';
 import type { PagedResponse, StationListQuery, StationStatus, StationSummary } from '@/api/types';
 import { ErrorAlert } from '@/components/ErrorAlert';
+import { StationQuickEditDialog } from '@/components/StationQuickEditDialog';
 import { StationStatusBadge } from '@/components/StationStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,7 +24,7 @@ const STATUS_FILTERS: { value: StationStatus | ''; label: string }[] = [
 
 export function StationListPage() {
   const navigate = useNavigate();
-  const { isBackoffice, isStaff } = useSession();
+  const { isBackoffice, isGridOperator, isStaff } = useSession();
 
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState<StationListQuery>({
@@ -38,6 +39,8 @@ export function StationListPage() {
   const [data, setData] = useState<PagedResponse<StationSummary> | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
+  // Row open in the Grid Operator quick-edit dialog, if any.
+  const [quickEdit, setQuickEdit] = useState<StationSummary | null>(null);
 
   // Debounced so typing in the search box does not fire a request per keystroke.
   useEffect(() => {
@@ -82,7 +85,7 @@ export function StationListPage() {
       <Card>
         <CardContent className="py-10 text-center text-muted-foreground">
           <p>The station management list is available to Backoffice and Grid Operator roles.</p>
-          <p className="mt-1 text-sm">Switch role in the header to view it.</p>
+          <p className="mt-1 text-sm">Sign in with a staff account to view it.</p>
         </CardContent>
       </Card>
     );
@@ -239,9 +242,40 @@ export function StationListPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/stations/${station.id}`}>View</Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link
+                            to={`/stations/${station.id}`}
+                            aria-label={`View ${station.name}`}
+                          >
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                            View
+                          </Link>
+                        </Button>
+                        {/* Grid Operators edit their two fields in a dialog; Backoffice
+                            needs the full form (map, schedule, capacity). */}
+                        {isGridOperator ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setQuickEdit(station)}
+                            aria-label={`Edit ${station.name}`}
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link
+                              to={`/stations/${station.id}/edit`}
+                              aria-label={`Edit ${station.name}`}
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                              Edit
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -279,6 +313,12 @@ export function StationListPage() {
           </div>
         )}
       </Card>
+
+      <StationQuickEditDialog
+        station={quickEdit}
+        onClose={() => setQuickEdit(null)}
+        onSaved={() => void load()}
+      />
     </div>
   );
 }

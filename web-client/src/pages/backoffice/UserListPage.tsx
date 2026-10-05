@@ -110,7 +110,7 @@ export default function UserListPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">User Directory</h1>
           <p className="mt-1 text-sm text-slate-500">
-            View, search, and manage all registered accounts in the Smart Solar Microgrid.
+            View, search, and manage all registered accounts in GridPulse.
           </p>
         </div>
         <div className="flex items-center gap-3">

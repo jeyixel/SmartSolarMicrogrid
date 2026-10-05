@@ -11,9 +11,9 @@ export default function StatusBadge({ status, className = '' }: StatusBadgeProps
   const label = getStatusLabel(status);
 
   const styles = {
-    0: 'bg-amber-100 text-amber-800 border-amber-300', // Pending
-    1: 'bg-emerald-100 text-emerald-800 border-emerald-300', // Active
-    2: 'bg-slate-100 text-slate-700 border-slate-300', // Deactivated
+    0: 'bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-500/40', // Pending
+    1: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40', // Active
+    2: 'bg-muted text-slate-700 dark:text-slate-300 border-input', // Deactivated
   };
 
   const dots = {

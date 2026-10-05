@@ -17,17 +17,17 @@ export default function AlertBanner({
   if (!message) return null;
 
   const styles = {
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-    error: 'bg-rose-50 text-rose-800 border-rose-200',
-    warning: 'bg-amber-50 text-amber-800 border-amber-200',
-    info: 'bg-blue-50 text-blue-800 border-blue-200',
+    success: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30',
+    error: 'bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-500/30',
+    warning: 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
+    info: 'bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-500/30',
   };
 
   const icons = {
-    success: <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />,
-    error: <XCircle className="h-5 w-5 text-rose-600 shrink-0" />,
-    warning: <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />,
-    info: <Info className="h-5 w-5 text-blue-600 shrink-0" />,
+    success: <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />,
+    error: <XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0" />,
+    warning: <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />,
+    info: <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />,
   };
 
   return (
@@ -41,7 +41,7 @@ export default function AlertBanner({
         <button
           type="button"
           onClick={onClose}
-          className="ml-auto text-slate-500 hover:text-slate-800"
+          className="ml-auto text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           aria-label="Dismiss alert"
         >
           &times;

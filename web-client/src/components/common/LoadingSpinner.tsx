@@ -19,9 +19,9 @@ export default function LoadingSpinner({
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center py-12 text-slate-500 ${className}`}>
-      <Loader2 className={`animate-spin text-blue-600 ${sizeClasses[size]}`} />
-      {message && <p className="mt-3 text-sm font-medium text-slate-600">{message}</p>}
+    <div className={`flex flex-col items-center justify-center py-12 text-slate-500 dark:text-slate-400 ${className}`}>
+      <Loader2 className={`animate-spin text-blue-600 dark:text-blue-400 ${sizeClasses[size]}`} />
+      {message && <p className="mt-3 text-sm font-medium text-muted-foreground">{message}</p>}
     </div>
   );
 }

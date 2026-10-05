@@ -282,4 +282,35 @@ public class EnergyReservationController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Verifies a scanned QR code token and finalizes the energy transfer session.
+    /// Used by Grid Operators at the solar station to complete the transfer.
+    /// </summary>
+    [HttpPost("verify-qr")]
+    public async Task<ActionResult<EnergyTransferResultDto>> VerifyQrCode([FromBody] VerifyQrRequestDto request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.QrToken))
+        {
+            return BadRequest(new { error = "QR Code token is required." });
+        }
+
+        try
+        {
+            var result = await _reservationService.VerifyAndFinalizeTransferAsync(request);
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
+        }
+    }
 }

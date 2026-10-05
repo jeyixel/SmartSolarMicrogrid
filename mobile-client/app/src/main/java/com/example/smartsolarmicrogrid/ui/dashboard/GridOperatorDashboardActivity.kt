@@ -21,6 +21,7 @@ class GridOperatorDashboardActivity : AppCompatActivity() {
     private lateinit var tvOperatorWelcome: TextView
     private lateinit var tvOperatorNic: TextView
     private lateinit var tvOperatorRoleStatus: TextView
+    private lateinit var btnScanQr: MaterialButton
     private lateinit var btnOperatorLogout: MaterialButton
 
     private lateinit var authSessionDao: AuthSessionDao
@@ -48,6 +49,7 @@ class GridOperatorDashboardActivity : AppCompatActivity() {
         tvOperatorWelcome = findViewById(R.id.tvOperatorWelcome)
         tvOperatorNic = findViewById(R.id.tvOperatorNic)
         tvOperatorRoleStatus = findViewById(R.id.tvOperatorRoleStatus)
+        btnScanQr = findViewById(R.id.btnScanQr)
         btnOperatorLogout = findViewById(R.id.btnOperatorLogout)
     }
 
@@ -66,6 +68,11 @@ class GridOperatorDashboardActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
+        btnScanQr.setOnClickListener {
+            val intent = Intent(this, com.example.smartsolarmicrogrid.ui.scanner.QrScannerActivity::class.java)
+            startActivity(intent)
+        }
+
         btnOperatorLogout.setOnClickListener {
             performLogout()
         }

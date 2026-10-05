@@ -1,4 +1,5 @@
 import React, { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -15,7 +16,7 @@ interface DialogProps {
  * Modal dialog following GridPulse design system:
  * - rounded-xl (12px) for floating overlays
  * - shadow-lg permitted for modals per THEME_GUIDE.md
- * - bg-white with border-slate-200
+ * - bg-card with border-border
  * - Backdrop closes the dialog
  */
 export const Dialog: React.FC<DialogProps> = ({
@@ -34,7 +35,9 @@ export const Dialog: React.FC<DialogProps> = ({
 
   if (!open) return null;
 
-  return (
+  // Rendered on <body> so the backdrop covers the whole viewport, including the
+  // sticky header and sidebar, whatever layout the dialog is opened from.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Scrim / Backdrop */}
       <div
@@ -50,7 +53,7 @@ export const Dialog: React.FC<DialogProps> = ({
         aria-labelledby="dialog-title"
         className={cn(
           'relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto',
-          'bg-white rounded-xl border border-slate-200 shadow-lg',
+          'bg-card rounded-xl border border-border shadow-lg',
           'p-6',
           className
         )}
@@ -60,7 +63,7 @@ export const Dialog: React.FC<DialogProps> = ({
           <div>
             <h2
               id="dialog-title"
-              className="text-headline-sm text-slate-900"
+              className="text-headline-sm text-foreground"
             >
               {title}
             </h2>
@@ -72,7 +75,7 @@ export const Dialog: React.FC<DialogProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+            className="ml-4 p-1 rounded hover:bg-muted text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors flex-shrink-0"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -81,6 +84,7 @@ export const Dialog: React.FC<DialogProps> = ({
 
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
