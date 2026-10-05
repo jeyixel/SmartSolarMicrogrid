@@ -3,6 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   fetchReservations,
   cancelReservation,
+  approveReservation,
+  rejectReservation,
   EnergyReservation,
 } from '../../lib/api';
 import {
@@ -14,6 +16,8 @@ import {
   TableCell,
 } from '../../components/ui/table';
 import { Button } from '../../components/ui/button';
+import { Dialog } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
 import { toast } from '../../hooks/useToast';
 import { ReservationModal } from './ReservationModal';
 import {
@@ -65,6 +69,11 @@ export const ReservationDashboard: React.FC = () => {
   const [modalOpen, setModalOpen]    = useState(false);
   const [editTarget, setEditTarget]  = useState<EnergyReservation | undefined>();
   const [cancelling, setCancelling]  = useState<string | null>(null);
+  const [approving, setApproving]    = useState<string | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTarget, setRejectTarget]       = useState<EnergyReservation | null>(null);
+  const [rejectReason, setRejectReason]       = useState('');
+  const [rejecting, setRejecting]             = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -83,6 +92,59 @@ export const ReservationDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleApprove = async (r: EnergyReservation) => {
+    if (!window.confirm(`Approve reservation ${r.reservationCode || r.id} for ${r.prosumerName || r.prosumerNIC}? This will confirm the booking and activate their QR pass.`)) return;
+    setApproving(r.id);
+    try {
+      await approveReservation(r.id, userId);
+      toast({
+        title: 'Reservation Approved',
+        description: `Reservation ${r.reservationCode || r.id} is now approved.`,
+        variant: 'default',
+      });
+      loadData();
+    } catch (err: any) {
+      toast({
+        title: 'Approval Failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setApproving(null);
+    }
+  };
+
+  const openReject = (r: EnergyReservation) => {
+    setRejectTarget(r);
+    setRejectReason('');
+    setRejectModalOpen(true);
+  };
+
+  const handleConfirmReject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectTarget) return;
+    setRejecting(true);
+    try {
+      await rejectReservation(rejectTarget.id, rejectReason.trim(), userId);
+      toast({
+        title: 'Reservation Rejected',
+        description: `Reservation ${rejectTarget.reservationCode || rejectTarget.id} was rejected. Slot capacity has been released.`,
+        variant: 'default',
+      });
+      setRejectModalOpen(false);
+      setRejectTarget(null);
+      loadData();
+    } catch (err: any) {
+      toast({
+        title: 'Rejection Failed',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setRejecting(false);
+    }
+  };
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Cancel this reservation? The physical slot will be released back to Available.')) return;
@@ -121,8 +183,9 @@ export const ReservationDashboard: React.FC = () => {
 
   // Counts for KPI row
   const pending   = reservations.filter(r => r.status === 'Pending').length;
+  const approved  = reservations.filter(r => r.status === 'Approved').length;
   const completed = reservations.filter(r => r.status === 'Completed').length;
-  const cancelled = reservations.filter(r => r.status === 'Cancelled').length;
+  const cancelled = reservations.filter(r => r.status === 'Cancelled' || r.status === 'Rejected').length;
 
   return (
     <div className="space-y-4">
@@ -150,8 +213,9 @@ export const ReservationDashboard: React.FC = () => {
       <div className="flex gap-3 flex-wrap">
         <KpiChip label="Total"     count={reservations.length} dotClass="bg-slate-400" />
         <KpiChip label="Pending"   count={pending}         dotClass="bg-amber-500 animate-pulse" />
+        <KpiChip label="Approved"  count={approved}        dotClass="bg-blue-500" />
         <KpiChip label="Completed" count={completed}       dotClass="bg-emerald-500" />
-        <KpiChip label="Cancelled" count={cancelled}       dotClass="bg-red-400" />
+        <KpiChip label="Cancelled / Rejected" count={cancelled} dotClass="bg-red-400" />
       </div>
 
       {/* Data table */}
@@ -245,12 +309,36 @@ export const ReservationDashboard: React.FC = () => {
                   {/* Actions */}
                   <TableCell className="text-right pr-4">
                     {r.status === 'Pending' ? (
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex justify-end items-center gap-1.5 flex-wrap">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-none font-medium"
+                          onClick={() => handleApprove(r)}
+                          disabled={approving === r.id || cancelling === r.id || rejecting}
+                        >
+                          {approving === r.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                          )}
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs px-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 font-medium"
+                          onClick={() => openReject(r)}
+                          disabled={approving === r.id || cancelling === r.id || rejecting}
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Reject
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 text-xs px-2.5"
                           onClick={() => openEdit(r)}
+                          disabled={approving === r.id || cancelling === r.id || rejecting}
                         >
                           Edit
                         </Button>
@@ -259,7 +347,7 @@ export const ReservationDashboard: React.FC = () => {
                           size="sm"
                           className="h-7 text-xs px-2.5"
                           onClick={() => handleCancel(r.id)}
-                          disabled={cancelling === r.id}
+                          disabled={cancelling === r.id || approving === r.id || rejecting}
                         >
                           {cancelling === r.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -269,10 +357,33 @@ export const ReservationDashboard: React.FC = () => {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex justify-end">
-                        {r.status === 'Completed' || r.status === 'Approved' || r.status === 'CheckedIn'
-                          ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                          : <XCircle className="h-4 w-4 text-slate-300 dark:text-slate-600" />}
+                      <div className="flex justify-end items-center gap-1.5 font-mono text-xs">
+                        {r.status === 'Approved' ? (
+                          <span className="inline-flex items-center text-blue-600 font-medium gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-blue-500" />
+                            Approved
+                          </span>
+                        ) : r.status === 'CheckedIn' ? (
+                          <span className="inline-flex items-center text-indigo-600 font-medium gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-indigo-500" />
+                            Checked In
+                          </span>
+                        ) : r.status === 'Completed' ? (
+                          <span className="inline-flex items-center text-emerald-600 font-medium gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            Completed
+                          </span>
+                        ) : r.status === 'Rejected' ? (
+                          <span className="inline-flex items-center text-red-600 font-medium gap-1" title={r.cancellationReason || 'Rejected'}>
+                            <XCircle className="h-3.5 w-3.5 text-red-500" />
+                            Rejected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center text-slate-400 gap-1">
+                            <XCircle className="h-3.5 w-3.5 text-slate-300" />
+                            Cancelled
+                          </span>
+                        )}
                       </div>
                     )}
                   </TableCell>
@@ -290,6 +401,65 @@ export const ReservationDashboard: React.FC = () => {
         onSuccess={handleModalSuccess}
         editReservation={editTarget}
       />
+
+      {/* Rejection Modal Dialog */}
+      <Dialog
+        open={rejectModalOpen}
+        onClose={() => { if (!rejecting) setRejectModalOpen(false); }}
+        title="Reject Reservation"
+        description={
+          rejectTarget
+            ? `Provide a reason for rejecting reservation ${rejectTarget.reservationCode || rejectTarget.id}. Physical slot capacity will be restored immediately.`
+            : 'Provide a reason for rejection.'
+        }
+      >
+        <form onSubmit={handleConfirmReject} className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="rejection-reason" className="text-label-sm text-slate-700 font-medium">
+              Rejection Reason
+            </label>
+            <Input
+              id="rejection-reason"
+              placeholder="e.g. Station capacity constrained / Incompatible charging protocol"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              required
+              className="w-full text-body-sm"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              This message will be attached to the reservation audit trail for the prosumer.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRejectModalOpen(false)}
+              disabled={rejecting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              size="sm"
+              disabled={rejecting}
+            >
+              {rejecting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                  Rejecting…
+                </>
+              ) : (
+                'Confirm Rejection'
+              )}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 };

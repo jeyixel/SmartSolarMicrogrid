@@ -43,7 +43,8 @@ class BookingHistoryAdapter(
         private val tvRefId: TextView = itemView.findViewById(R.id.tvRefId)
 
         fun bind(item: ReservationHistoryDto, onItemClick: ((ReservationHistoryDto) -> Unit)?) {
-            tvStationId.text = item.stationId
+            val displayName = if (item.stationName.isNotBlank() && item.stationName != "N/A") item.stationName else item.stationId
+            tvStationId.text = displayName
             tvEnergyAmount.text = String.format(Locale.getDefault(), "%.1f kWh", item.energyAmountKWh)
             tvActionType.text = item.actionType
 

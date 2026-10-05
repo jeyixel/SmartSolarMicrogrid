@@ -301,7 +301,7 @@ export const BookingHistoryPage: React.FC = () => {
                       {item.id.slice(-8).toUpperCase()}
                     </TableCell>
                     <TableCell className="font-medium text-foreground">
-                      {item.stationId}
+                      {item.stationName || item.stationId}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-foreground font-medium">

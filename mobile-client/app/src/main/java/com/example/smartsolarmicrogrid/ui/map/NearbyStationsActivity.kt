@@ -30,6 +30,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import android.widget.Toast
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
 import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
@@ -144,28 +145,15 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
             if (lat != null && lng != null) openDirections(lat, lng)
         }
 
-        // Member 3 Integration Handoff Point
+        // Opens the booking flow pre-filled with the station selected on the map.
         binding.detailsPanel.detailBookButton.setOnClickListener {
             val currentState = viewModel.detailState.value
             if (currentState is StationDetailUiState.Success) {
-                val stationId = currentState.station.id
-                val stationName = currentState.station.name
-                
-                // Show a Toast to prove the integration works for the Viva
-                Toast.makeText(
-                    this, 
-                    "Handing off to Member 3 Booking...\nStation: $stationName", 
-                    Toast.LENGTH_LONG
-                ).show()
-
-                // Intent placeholder for Member 3:
-                /*
-                val intent = Intent(this, BookSlotActivity::class.java).apply {
-                    putExtra("EXTRA_STATION_ID", stationId)
-                    putExtra("EXTRA_STATION_NAME", stationName)
+                val intent = Intent(this, CreateBookingActivity::class.java).apply {
+                    putExtra(CreateBookingActivity.EXTRA_STATION_ID, currentState.station.id)
+                    putExtra(CreateBookingActivity.EXTRA_STATION_NAME, currentState.station.name)
                 }
                 startActivity(intent)
-                */
             }
         }
 
