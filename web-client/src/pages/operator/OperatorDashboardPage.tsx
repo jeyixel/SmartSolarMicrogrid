@@ -93,6 +93,7 @@ export function OperatorDashboardPage() {
       .sort((a, b) => a.availableBatterySlots - b.availableBatterySlots);
 
     const usedSlots = Math.max(totalSlots - availableSlots, 0);
+    const utilizationPct = totalSlots > 0 ? Math.round((usedSlots / totalSlots) * 100) : 0;
 
     // Largest nodes first, for the capacity chart.
     const byCapacity = [...stations].sort((a, b) => b.capacityKWh - a.capacityKWh).slice(0, 5);
@@ -106,6 +107,7 @@ export function OperatorDashboardPage() {
       totalSlots,
       availableSlots,
       usedSlots,
+      utilizationPct,
       totalCapacity,
       lowSlotStations,
       byCapacity,
@@ -199,6 +201,38 @@ export function OperatorDashboardPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="rounded-lg border border-border bg-card p-5">
               <h2 className="text-sm font-semibold text-foreground">Slot usage</h2>
+
+              {/*
+                Meter, not a pie: this is a single ratio against a limit
+                (occupied / total), and the dataviz skill names a 2-slice pie
+                as the wrong form for exactly this shape. Fill carries
+                severity (emerald -> amber -> red as usage climbs); the
+                unfilled track is a lighter step of the same ramp so state
+                reads across the whole bar even before the number is read.
+              */}
+              <div className="mt-5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl font-semibold tabular-nums text-foreground">
+                    {summary.utilizationPct}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">in use</span>
+                </div>
+                <div className="mt-2 h-4 w-full rounded bg-emerald-100 dark:bg-emerald-500/15">
+                  <div
+                    className={`h-4 rounded transition-[width] duration-500 ease-out ${
+                      summary.utilizationPct >= 85
+                        ? 'bg-red-500 dark:bg-red-600'
+                        : summary.utilizationPct >= 60
+                          ? 'bg-amber-500 dark:bg-amber-600'
+                          : 'bg-emerald-500 dark:bg-emerald-600'
+                    }`}
+                    style={{ width: `${Math.max(summary.utilizationPct, 2)}%` }}
+                    role="img"
+                    aria-label={`${summary.utilizationPct}% of battery slots in use`}
+                  />
+                </div>
+              </div>
+
               <div className="mt-4 grid grid-cols-2 gap-3 text-center">
                 <div className="rounded-md bg-background py-3">
                   <p className="text-xl font-semibold tabular-nums text-foreground">
