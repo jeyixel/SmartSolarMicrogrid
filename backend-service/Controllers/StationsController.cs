@@ -183,6 +183,7 @@ public sealed class StationsController : ControllerBase
     /// the reservation and grid-operations modules.
     /// </summary>
     [HttpGet("lookup")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(List<StationLookupResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLookup(CancellationToken cancellationToken)
     {
