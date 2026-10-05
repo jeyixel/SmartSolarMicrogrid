@@ -175,18 +175,21 @@ export function OperatorDashboardPage() {
               label="Total stations"
               value={summary.totalStations}
               hint="Across the whole network"
+              tone="neutral"
             />
             <StatTile
               icon={<Power className="h-4 w-4" />}
               label="Active nodes"
               value={summary.activeCount}
               hint="Serving reservations now"
+              tone="emerald"
             />
             <StatTile
               icon={<BatteryCharging className="h-4 w-4" />}
               label="Battery slots free"
               value={`${summary.availableSlots} / ${summary.totalSlots}`}
               hint="Network-wide capacity"
+              tone="neutral"
             />
             <StatTile
               icon={<Wrench className="h-4 w-4" />}
@@ -271,38 +274,42 @@ export function OperatorDashboardPage() {
               {summary.byCapacity.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground">No stations to chart yet.</p>
               ) : (
-                <ul className="mt-5 space-y-2.5" role="img" aria-label="Capacity by station, in kWh">
+                <ul className="mt-5 space-y-3.5" role="img" aria-label="Capacity by station, in kWh">
                   {summary.byCapacity.map((station) => {
                     const pct =
                       summary.peakCapacity > 0
                         ? (station.capacityKWh / summary.peakCapacity) * 100
                         : 0;
                     return (
-                      <li key={station.id} className="flex items-center gap-3">
-                        <Link
-                          to={`/stations/${encodeURIComponent(station.id)}`}
-                          className="w-32 shrink-0 truncate text-sm font-medium text-foreground hover:text-primary sm:w-40"
-                          title={station.name}
-                        >
-                          {station.name}
-                        </Link>
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          {/* Track: one step off-surface, same geometry as the fill */}
-                          <div className="h-4 min-w-0 flex-1 rounded bg-muted">
-                            <div
-                              className={`h-4 rounded-r ${CAPACITY_BAR_FILL} transition-[width] duration-500 ease-out`}
-                              style={{
-                                width: `${Math.max(pct, 3)}%`,
-                                // 4px rounded data-end, square at the baseline (left edge).
-                                borderTopLeftRadius: 0,
-                                borderBottomLeftRadius: 0,
-                              }}
-                            />
-                          </div>
+                      <li key={station.id}>
+                        {/*
+                          Name sits on its own line, full width - no fixed-width
+                          truncating label. A label that doesn't fit gets more
+                          room, not clipped (marks-and-anatomy.md).
+                        */}
+                        <div className="flex items-baseline justify-between gap-3 text-sm">
+                          <Link
+                            to={`/stations/${encodeURIComponent(station.id)}`}
+                            className="truncate font-medium text-foreground hover:text-primary"
+                            title={station.name}
+                          >
+                            {station.name}
+                          </Link>
                           {/* Value at the tip (bars -> value at the tip) */}
-                          <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
+                          <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
                             {station.capacityKWh.toFixed(1)} kWh
                           </span>
+                        </div>
+                        <div className="mt-1.5 h-3 rounded bg-muted">
+                          <div
+                            className={`h-3 rounded-r ${CAPACITY_BAR_FILL} transition-[width] duration-500 ease-out`}
+                            style={{
+                              width: `${Math.max(pct, 3)}%`,
+                              // 4px rounded data-end, square at the baseline (left edge).
+                              borderTopLeftRadius: 0,
+                              borderBottomLeftRadius: 0,
+                            }}
+                          />
                         </div>
                       </li>
                     );
@@ -491,7 +498,13 @@ export function OperatorDashboardPage() {
   );
 }
 
-/** One KPI tile: icon, label, value and a short hint. All four share the same style. */
+/**
+ * One KPI tile: icon chip, label, value and a short hint. All four share the
+ * same layout; `tone` is reserved for when it carries real meaning (the
+ * "good" state, or a warning that something needs attention) - not applied
+ * decoratively per-tile. Chip colors reuse the same validated emerald/amber
+ * steps as the charts above, not a new ad-hoc palette.
+ */
 function StatTile({
   icon,
   label,
@@ -503,19 +516,28 @@ function StatTile({
   label: string;
   value: React.ReactNode;
   hint: string;
-  tone?: 'neutral' | 'warning';
+  tone?: 'neutral' | 'emerald' | 'warning';
 }) {
+  const chipClass =
+    tone === 'emerald'
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+      : tone === 'warning'
+        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+        : 'bg-muted text-muted-foreground';
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <span className="text-xs font-medium">{label}</span>
+      <div className="flex items-center gap-2.5">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${chipClass}`}>
+          {icon}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
       </div>
       <p
         className={
           tone === 'warning'
-            ? 'mt-2 text-2xl font-semibold tabular-nums text-amber-700 dark:text-amber-400'
-            : 'mt-2 text-2xl font-semibold tabular-nums text-foreground'
+            ? 'mt-3 text-2xl font-semibold tabular-nums text-amber-700 dark:text-amber-400'
+            : 'mt-3 text-2xl font-semibold tabular-nums text-foreground'
         }
       >
         {value}
@@ -531,9 +553,12 @@ function SkeletonState() {
     <div className="space-y-4" aria-busy="true" aria-label="Loading dashboard">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-28 animate-pulse rounded-lg border border-border bg-card p-4">
-            <div className="h-3 w-20 rounded bg-muted" />
-            <div className="mt-5 h-7 w-14 rounded bg-muted" />
+          <div key={i} className="h-32 animate-pulse rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 shrink-0 rounded-md bg-muted" />
+              <div className="h-3 w-20 rounded bg-muted" />
+            </div>
+            <div className="mt-3 h-7 w-14 rounded bg-muted" />
             <div className="mt-3 h-2.5 w-28 rounded bg-muted" />
           </div>
         ))}
