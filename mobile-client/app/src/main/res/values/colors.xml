@@ -48,4 +48,16 @@
     <color name="color_on_error">@color/palette_white</color>
     <color name="color_error_container">@color/palette_red_50</color>
     <color name="color_error_outline">@color/palette_red_100</color>
+
+    <!-- Added missing colors after dev pull -->
+    <color name="white">#FFFFFF</color>
+    <color name="solar_bg_light">#A5D6A7</color>
+    <color name="card_border">#E0E5E0</color>
+    <color name="solar_green_primary">#0B3B24</color>
+    <color name="solar_green_light">#A5D6A7</color>
+    <color name="error_red">#D32F2F</color>
+    <color name="solar_green_secondary">#144D34</color>
+    <color name="solar_amber">#F57F17</color>
+    <color name="logout_bg">#FFEBEE</color>
+    <color name="logout_border">#FFCDD2</color>
 </resources>

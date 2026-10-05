@@ -30,6 +30,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import android.widget.Toast
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
 import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
 import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
 import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
@@ -158,14 +159,11 @@ class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
                     Toast.LENGTH_LONG
                 ).show()
 
-                // Intent placeholder for Member 3:
-                /*
-                val intent = Intent(this, BookSlotActivity::class.java).apply {
-                    putExtra("EXTRA_STATION_ID", stationId)
-                    putExtra("EXTRA_STATION_NAME", stationName)
+                val intent = Intent(this, CreateBookingActivity::class.java).apply {
+                    putExtra(CreateBookingActivity.EXTRA_STATION_ID, stationId)
+                    putExtra(CreateBookingActivity.EXTRA_STATION_NAME, stationName)
                 }
                 startActivity(intent)
-                */
             }
         }
 

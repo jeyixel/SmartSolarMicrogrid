@@ -24,12 +24,13 @@ data class ReservationHistoryDto(
 ) {
     companion object {
         fun fromJson(json: JSONObject): ReservationHistoryDto {
+            val sId = json.optString("stationId", "N/A")
             return ReservationHistoryDto(
                 id = json.optString("id", ""),
                 prosumerNIC = json.optString("prosumerNIC", ""),
                 slotId = json.optString("slotId", ""),
-                stationId = json.optString("stationId", "N/A"),
-                stationName = json.optString("stationName", ""),
+                stationId = sId,
+                stationName = json.optString("stationName", "").ifBlank { sId },
                 startTime = json.optString("startTime", ""),
                 endTime = json.optString("endTime", ""),
                 energyAmountKWh = json.optDouble("energyAmountKWh", 0.0),
