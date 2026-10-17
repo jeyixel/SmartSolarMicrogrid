@@ -15,8 +15,8 @@ public interface IReservationAvailabilityService
 {
     /// <summary>
     /// Counts reservations against <paramref name="stationId"/> that still bind
-    /// the station: status Pending or Approved, and a slot that has not yet
-    /// passed. Completed, cancelled, rejected and expired reservations do not
+    /// the station: status Pending, Approved or CheckedIn, and a slot that has not yet
+    /// passed (or has an unknown end time). Completed, cancelled, rejected and expired reservations do not
     /// count and must not block an operator.
     /// </summary>
     /// <returns>Zero when the station is free. Never throws for "none found".</returns>

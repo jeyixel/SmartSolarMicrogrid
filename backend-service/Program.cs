@@ -127,14 +127,8 @@ builder.Services.AddScoped<IEnergyReservationRepository, EnergyReservationReposi
 builder.Services.AddScoped<IEnergyBookingSlotService, EnergyBookingSlotService>();
 builder.Services.AddScoped<IEnergyReservationService, EnergyReservationService>();
 
-// Member 3 owns the real implementation. Until it is registered, a stub reports
-// no reservations so this module can be built and demonstrated on its own. It is
-// refused outside Development, because an unguarded deactivation in production
-// would silently break the rule it exists to enforce.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddSingleton<IReservationAvailabilityService, StubReservationAvailabilityService>();
-}
+// Station services require this dependency in every hosting environment.
+builder.Services.AddScoped<IReservationAvailabilityService, ReservationAvailabilityService>();
 
 // MVC
 builder.Services
