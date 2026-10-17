@@ -1,0 +1,12 @@
+$env:JENKINS_HOME = "$env:USERPROFILE\Jenkins\data"
+java -jar "$env:USERPROFILE\Jenkins\jenkins.war" --httpPort=8080 --httpListenAddress=127.0.0.1
+
+
+http://127.0.0.1:8081/api/health
+
+inetmgr
+
+
+
+set "JENKINS_HOME=%USERPROFILE%\Jenkins\data"
+java -jar "%USERPROFILE%\Jenkins\jenkins.war" --httpPort=8080 --httpListenAddress=127.0.0.1

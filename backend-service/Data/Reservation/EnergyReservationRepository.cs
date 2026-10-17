@@ -21,6 +21,20 @@ public class EnergyReservationRepository : IEnergyReservationRepository
     public async Task<List<EnergyReservation>> GetByProsumerNicAsync(string prosumerNic) =>
         await _reservations.Find(x => x.ProsumerNIC == prosumerNic).ToListAsync();
 
+    public Task<long> CountActiveByStationAsync(string stationId, DateTime nowUtc, CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<EnergyReservation>.Filter;
+        // A legacy reservation with no end time must not silently allow deactivation.
+        var notEnded = filter.Gt(x => x.SlotEndTime, nowUtc)
+            | filter.Eq(x => x.SlotEndTime, default(DateTime))
+            | filter.Exists(x => x.SlotEndTime, false);
+        var active = filter.Eq(x => x.StationId, stationId)
+            & filter.In(x => x.Status, new[] { "Pending", "Approved", "CheckedIn" })
+            & notEnded;
+
+        return _reservations.CountDocumentsAsync(active, cancellationToken: cancellationToken);
+    }
+
     public async Task CreateAsync(EnergyReservation reservation) =>
         await _reservations.InsertOneAsync(reservation);
 
