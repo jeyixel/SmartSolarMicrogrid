@@ -1,0 +1,1471 @@
+8.2 Mobile App Source Code (Kotlin) - Member 2: Microgrid Node (Station) Management / Maps
+Heshan Jayasekara
+Pure native Android app (no cross-platform framework) - mobile-client
+
+Each part below is one source file I wrote, headed by its class/function
+name, not its repository path. 10 parts included in full.
+
+Plain DTOs (data/remote/dto) and generated test stubs are intentionally
+excluded - essential app logic only.
+
+==============================================================================
+Member 2 - Microgrid Node (Station) Management / Maps (Heshan Jayasekara)
+==============================================================================
+
+--- Part 1: ApiClient ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/data/remote/ApiClient.kt)
+
+package com.example.smartsolarmicrogrid.data.remote
+
+import android.content.Context
+import com.example.smartsolarmicrogrid.BuildConfig
+import com.example.smartsolarmicrogrid.data.local.TokenManager
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+
+/**
+ * Builds the single Retrofit instance used by the station endpoints.
+ *
+ * Creating Retrofit/OkHttp is expensive (thread pools, connection pool), so one
+ * instance is shared rather than built per request.
+ *
+ * [init] must be called once before [stationApi] is used - the application
+ * class or the first activity is the right place - because the auth
+ * interceptor needs a Context to read the stored token.
+ */
+object ApiClient {
+
+    private lateinit var tokenManager: TokenManager
+
+    fun init(context: Context) {
+        if (!::tokenManager.isInitialized) {
+            tokenManager = TokenManager(context.applicationContext)
+        }
+    }
+
+    /**
+     * Every station endpoint sits behind [Authorize], so each request carries
+     * the JWT issued by the login endpoint. The header is omitted entirely
+     * when no token is stored, which lets the API answer 401 rather than the
+     * app sending "Bearer null".
+     */
+    private val authInterceptor = Interceptor { chain ->
+        val token = if (::tokenManager.isInitialized) tokenManager.getToken() else null
+
+        val request = if (token.isNullOrBlank()) {
+            chain.request()
+        } else {
+            chain.request().newBuilder()
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        }
+
+        chain.proceed(request)
+    }
+
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        // Bodies are logged in debug builds only; a release build must not
+        // write API payloads - or bearer tokens - into logcat.
+        level = if (BuildConfig.DEBUG) {
+            HttpLoggingInterceptor.Level.BODY
+        } else {
+            HttpLoggingInterceptor.Level.NONE
+        }
+    }.apply {
+        redactHeader("Authorization")
+    }
+
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+    }
+
+    val stationApi: StationApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.API_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(StationApiService::class.java)
+    }
+}
+
+
+--- Part 2: ApiResult ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/data/repository/ApiResult.kt)
+
+package com.example.smartsolarmicrogrid.data.repository
+
+/**
+ * Outcome of a network call.
+ *
+ * The repository never throws at its caller: every failure - no connection,
+ * timeout, 401, 404, malformed JSON - comes back as [Error] carrying a message
+ * fit to show the user. The ViewModel can then render a state rather than
+ * wrapping each call in try/catch.
+ */
+sealed class ApiResult<out T> {
+    data class Success<out T>(val data: T) : ApiResult<T>()
+    data class Error(val message: String) : ApiResult<Nothing>()
+}
+
+
+--- Part 3: NearbyStationsActivity ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/ui/map/NearbyStationsActivity.kt)
+
+package com.example.smartsolarmicrogrid.ui.map
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.location.Location
+import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Bundle
+import android.view.View
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.data.model.StationDetailDto
+import com.example.smartsolarmicrogrid.data.model.StationMapSummaryDto
+import com.example.smartsolarmicrogrid.data.remote.ApiClient
+import com.example.smartsolarmicrogrid.data.repository.StationRepository
+import com.example.smartsolarmicrogrid.databinding.ActivityNearbyStationsBinding
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import android.widget.Toast
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
+import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
+import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.Dash
+import com.google.android.gms.maps.model.Gap
+import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
+import kotlinx.coroutines.launch
+import com.google.android.gms.maps.MapsInitializer
+import com.google.android.gms.maps.MapsInitializer.Renderer
+import java.util.Calendar
+import java.util.Locale
+
+/**
+ * "Nearby Solar Stations" screen.
+ *
+ * Responsibilities are deliberately limited to Android concerns: request the
+ * location permission, set up the map, draw markers, and render whatever state
+ * the ViewModel publishes. It performs no networking itself.
+ */
+class NearbyStationsActivity : AppCompatActivity(), OnMapReadyCallback {
+
+    private lateinit var binding: ActivityNearbyStationsBinding
+    private val viewModel: NearbyStationsViewModel by viewModels()
+
+    private var mMap: GoogleMap? = null
+    private val markers = mutableMapOf<String, Marker>()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    /** Last point the station list was requested for; reused by Retry. */
+    private var lastQueriedLocationLat = 6.9271
+    private var lastQueriedLocationLng = 79.8612
+
+    private var mapLoaded = false
+
+    /** The user's real position; null until a location fix succeeds (never the fallback point). */
+    private var userLocation: LatLng? = null
+
+    /** Dashed line from the user to the currently selected station. */
+    private var routeLine: Polyline? = null
+
+    /**
+     * Android 12+ lets the user grant only approximate location, so the result
+     * is a map of both permissions and either one being granted is enough.
+     */
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val granted = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (granted) {
+            enableMyLocationLayer()
+            moveToCurrentLocationAndLoad()
+        } else {
+            showMessage(getString(R.string.msg_permission_denied))
+            loadStationsAround(6.9271, 79.8612)
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Force the Maps SDK to use the Legacy Renderer to bypass the SecurityException
+        // in policy_maps_core_dynamite on certain devices/Play Services versions.
+        MapsInitializer.initialize(this, Renderer.LEGACY, null)
+
+        enableEdgeToEdge()
+        binding = ActivityNearbyStationsBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        // Same as the other screens: keep the top bar below the status bar;
+        // the bottom bar pads itself for the system navigation bar.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            insets
+        }
+
+        ApiClient.init(this)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+        val mapFragment = supportFragmentManager
+            .findFragmentById(R.id.mapFragment) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+        binding.retryButton.setOnClickListener {
+            hideMessage()
+            requestLocationOrFallback()
+        }
+
+        binding.detailsPanel.detailCloseButton.setOnClickListener {
+            viewModel.dismissDetails()
+        }
+
+        binding.detailsPanel.detailDirectionsButton.setOnClickListener {
+            val station = (viewModel.detailState.value as? StationDetailUiState.Success)?.station
+            val lat = station?.latitude
+            val lng = station?.longitude
+            if (lat != null && lng != null) openDirections(lat, lng)
+        }
+
+        // Opens the booking flow pre-filled with the station selected on the map.
+        binding.detailsPanel.detailBookButton.setOnClickListener {
+            val currentState = viewModel.detailState.value
+            if (currentState is StationDetailUiState.Success) {
+                val intent = Intent(this, CreateBookingActivity::class.java).apply {
+                    putExtra(CreateBookingActivity.EXTRA_STATION_ID, currentState.station.id)
+                    putExtra(CreateBookingActivity.EXTRA_STATION_NAME, currentState.station.name)
+                }
+                startActivity(intent)
+            }
+        }
+
+        setupNavigation()
+        observeViewModel()
+    }
+
+    private fun setupNavigation() {
+        binding.btnBack.setOnClickListener { finish() }
+
+        // Re-reads the user's location and reloads stations around it
+        binding.btnRefreshStations.setOnClickListener {
+            hideMessage()
+            viewModel.dismissDetails()
+            requestLocationOrFallback()
+        }
+
+        ProsumerNavigator.setupBottomNav(this, binding.bottomNavigation, R.id.nav_map)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        mMap = googleMap
+        mapLoaded = true
+        applyMapTheme(googleMap)
+
+        mMap?.setOnMarkerClickListener { marker ->
+            val stationId = marker.tag as? String
+            if (stationId != null) {
+                viewModel.loadStationDetails(stationId)
+            }
+            false // Return false so the default behavior (centering the marker and opening info window) still occurs
+        }
+
+        enableMyLocationLayer()
+
+        if (!viewModel.hasLoadedOnce) {
+            requestLocationOrFallback()
+        } else {
+            updateMapCenter(lastQueriedLocationLat, lastQueriedLocationLng)
+            (viewModel.uiState.value as? StationsUiState.Success)?.let {
+                drawMarkers(it.stations)
+            }
+        }
+    }
+
+    /** Uses a dark map style when the app is in dark mode. */
+    private fun applyMapTheme(map: GoogleMap) {
+        val isNight = (resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        map.setMapStyle(
+            if (isNight) MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style_night) else null
+        )
+    }
+
+    // -- Location ------------------------------------------------------------
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Shows the user's position as the blue "my location" dot, plus the map's
+     * recenter button. Safe to call repeatedly; it no-ops until both the map is
+     * ready and a location permission has been granted.
+     */
+    @SuppressLint("MissingPermission")
+    private fun enableMyLocationLayer() {
+        val map = mMap ?: return
+        if (!hasLocationPermission()) return
+        map.isMyLocationEnabled = true
+        map.uiSettings.isMyLocationButtonEnabled = true
+    }
+
+    private fun requestLocationOrFallback() {
+        if (hasLocationPermission()) {
+            moveToCurrentLocationAndLoad()
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun moveToCurrentLocationAndLoad() {
+        if (!hasLocationPermission()) {
+            loadStationsAround(6.9271, 79.8612)
+            return
+        }
+
+        // Use GPS when precise location was granted; Android 12+ users may grant approximate only
+        val priority = if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+
+        fusedLocationClient.getCurrentLocation(priority, null).addOnSuccessListener { location ->
+            if (location == null) {
+                showMessage(getString(R.string.msg_location_unavailable))
+                loadStationsAround(6.9271, 79.8612)
+            } else {
+                userLocation = LatLng(location.latitude, location.longitude)
+                updateMapCenter(location.latitude, location.longitude)
+                loadStationsAround(location.latitude, location.longitude)
+            }
+        }.addOnFailureListener {
+            showMessage(getString(R.string.msg_location_unavailable))
+            loadStationsAround(6.9271, 79.8612)
+        }
+    }
+
+    private fun loadStationsAround(lat: Double, lng: Double) {
+        lastQueriedLocationLat = lat
+        lastQueriedLocationLng = lng
+        updateMapCenter(lat, lng)
+        viewModel.loadNearbyStations(lat, lng)
+    }
+
+    private fun updateMapCenter(lat: Double, lng: Double) {
+        if (!mapLoaded) return
+        mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 12f))
+    }
+
+    // -- State rendering -----------------------------------------------------
+
+    private fun observeViewModel() {
+        // repeatOnLifecycle stops collection when the screen is not visible,
+        // so no UI update is attempted against a destroyed view.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { viewModel.uiState.collect { renderStations(it) } }
+                launch { viewModel.detailState.collect { renderDetails(it) } }
+            }
+        }
+    }
+
+    private fun renderStations(state: StationsUiState) {
+        binding.loadingIndicator.visibility =
+            if (state is StationsUiState.Loading) View.VISIBLE else View.GONE
+
+        when (state) {
+            is StationsUiState.Idle, is StationsUiState.Loading -> Unit
+
+            is StationsUiState.Success -> {
+                hideMessage()
+                drawMarkers(state.stations)
+            }
+
+            is StationsUiState.Empty -> {
+                clearMarkers()
+                showMessage(
+                    getString(
+                        R.string.msg_no_stations,
+                        formatNumber(StationRepository.DEFAULT_RADIUS_KM)
+                    )
+                )
+            }
+
+            is StationsUiState.Error -> {
+                clearMarkers()
+                showMessage(state.message)
+            }
+        }
+    }
+
+    private fun drawMarkers(stations: List<StationMapSummaryDto>) {
+        if (!mapLoaded) return
+        clearMarkers()
+
+        stations.forEach { station ->
+            val lat = station.latitude ?: return@forEach
+            val lng = station.longitude ?: return@forEach
+            
+            val isActive = station.isOpenNow == true
+            
+            val markerColor = if (isActive) {
+                BitmapDescriptorFactory.HUE_GREEN
+            } else {
+                BitmapDescriptorFactory.HUE_ORANGE
+            }
+
+            val distanceKm = userLocation?.let { distanceKmBetween(it, LatLng(lat, lng)) }
+                ?: station.distanceKm
+
+            val marker = mMap?.addMarker(
+                MarkerOptions()
+                    .position(LatLng(lat, lng))
+                    .title(station.name)
+                    .snippet(distanceKm?.let { getString(R.string.fmt_marker_snippet, formatDistance(it)) })
+                    .icon(BitmapDescriptorFactory.defaultMarker(markerColor))
+            )
+            
+            if (marker != null) {
+                marker.tag = station.id
+                markers[station.id] = marker
+            }
+        }
+    }
+
+    private fun clearMarkers() {
+        if (!mapLoaded) return
+        mMap?.clear()
+        markers.clear()
+        routeLine = null
+    }
+
+    private fun renderDetails(state: StationDetailUiState) {
+        val panel = binding.detailsPanel
+
+        when (state) {
+            is StationDetailUiState.Hidden -> {
+                panel.detailsCard.visibility = View.GONE
+                clearRoute()
+            }
+
+            is StationDetailUiState.Loading -> {
+                panel.detailsCard.visibility = View.VISIBLE
+                panel.detailLoading.visibility = View.VISIBLE
+                panel.detailName.text = ""
+                panel.detailDistance.visibility = View.GONE
+                panel.detailDirectionsButton.isEnabled = false
+                panel.detailStatusPill.visibility = View.GONE
+                panel.detailCode.visibility = View.GONE
+                panel.detailAddress.visibility = View.GONE
+                panel.detailDescription.visibility = View.GONE
+                panel.detailOperatingHours.visibility = View.GONE
+                panel.detailCapacity.visibility = View.GONE
+                panel.detailSlots.visibility = View.GONE
+                panel.detailPhone.visibility = View.GONE
+            }
+
+            is StationDetailUiState.Success -> {
+                panel.detailsCard.visibility = View.VISIBLE
+                panel.detailLoading.visibility = View.GONE
+                bindStationDetails(state.station)
+            }
+
+            is StationDetailUiState.Error -> {
+                panel.detailsCard.visibility = View.VISIBLE
+                panel.detailLoading.visibility = View.GONE
+                panel.detailName.text = state.message
+                panel.detailDistance.visibility = View.GONE
+                panel.detailDirectionsButton.isEnabled = false
+                clearRoute()
+                panel.detailStatusPill.visibility = View.GONE
+                panel.detailCode.visibility = View.GONE
+                panel.detailAddress.visibility = View.GONE
+                panel.detailDescription.visibility = View.GONE
+                panel.detailOperatingHours.visibility = View.GONE
+                panel.detailCapacity.visibility = View.GONE
+                panel.detailSlots.visibility = View.GONE
+                panel.detailPhone.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun bindStationDetails(station: StationDetailDto) {
+        val panel = binding.detailsPanel
+
+        panel.detailName.text = station.name
+        
+        // Setup Active / Closed pill
+        if (station.isOpenNow == true) {
+            panel.detailStatusPill.visibility = View.VISIBLE
+            panel.detailStatusPill.text = "● Active"
+            panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_active)
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.color_on_primary_container))
+        } else {
+            panel.detailStatusPill.visibility = View.VISIBLE
+            panel.detailStatusPill.text = "● Closed"
+            panel.detailStatusPill.setBackgroundResource(R.drawable.bg_pill_review)
+            panel.detailStatusPill.setTextColor(ContextCompat.getColor(this, R.color.color_on_warning_container))
+        }
+
+        bindOptionalText(panel.detailCode, getString(R.string.fmt_station_code, station.stationCode))
+        bindDistanceAndRoute(station)
+        bindOptionalText(panel.detailAddress, station.addressLine)
+        bindOptionalText(panel.detailDescription, station.description)
+
+        // Find today's operating hours using standard Calendar (API 24 compatible)
+        val calendar = Calendar.getInstance()
+        val dayString = calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.getDefault())
+        val todaysSchedule = station.operationalSchedule?.find { it.dayOfWeek.equals(dayString, ignoreCase = true) }
+        
+        if (todaysSchedule != null) {
+            if (todaysSchedule.isClosed == true) {
+                bindOptionalText(panel.detailOperatingHours, getString(R.string.label_closed_now))
+            } else {
+                bindOptionalText(panel.detailOperatingHours, "${getString(R.string.label_operating_hours)}: ${todaysSchedule.openTime} - ${todaysSchedule.closeTime}")
+            }
+        } else {
+            panel.detailOperatingHours.visibility = View.GONE
+        }
+
+        bindOptionalText(
+            panel.detailCapacity,
+            station.capacityKWh?.let { "${formatNumber(it)} kWh" }
+        )
+
+        bindOptionalText(
+            panel.detailSlots,
+            if (station.availableBatterySlots != null && station.totalBatterySlots != null) {
+                "${station.availableBatterySlots} / ${station.totalBatterySlots}"
+            } else {
+                null
+            }
+        )
+
+        bindOptionalText(
+            panel.detailPhone,
+            station.contactPhone
+                ?.takeIf { it.isNotBlank() }
+                ?.let { getString(R.string.fmt_contact, it) }
+        )
+    }
+
+    // -- Distance & directions -------------------------------------------------
+
+    /**
+     * Shows how far the station is from the user, draws a dashed line between
+     * them, and zooms the map so both points are visible.
+     */
+    private fun bindDistanceAndRoute(station: StationDetailDto) {
+        val panel = binding.detailsPanel
+        val lat = station.latitude
+        val lng = station.longitude
+        panel.detailDirectionsButton.isEnabled = lat != null && lng != null
+        panel.detailDistance.visibility = View.VISIBLE
+
+        val from = userLocation
+        if (lat == null || lng == null || from == null) {
+            panel.detailDistance.text = getString(R.string.msg_distance_unavailable)
+            clearRoute()
+            return
+        }
+
+        val to = LatLng(lat, lng)
+        panel.detailDistance.text =
+            getString(R.string.fmt_distance_from_you, formatDistance(distanceKmBetween(from, to)))
+        // Wait for the card to lay out so its height can be used as map padding
+        panel.detailsCard.post { showRoute(from, to) }
+    }
+
+    private fun showRoute(from: LatLng, to: LatLng) {
+        val map = mMap ?: return
+        clearRoute()
+        routeLine = map.addPolyline(
+            PolylineOptions()
+                .add(from, to)
+                .width(10f)
+                .color(ContextCompat.getColor(this, R.color.color_accent))
+                .pattern(listOf(Dash(30f), Gap(20f)))
+                .geodesic(true)
+        )
+
+        // Keep both points above the details card, which covers the lower part of the map
+        map.setPadding(0, 0, 0, binding.detailsPanel.detailsCard.height)
+        val bounds = LatLngBounds.builder().include(from).include(to).build()
+        val padding = (resources.displayMetrics.density * 72).toInt()
+        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
+    }
+
+    private fun clearRoute() {
+        routeLine?.remove()
+        routeLine = null
+        mMap?.setPadding(0, 0, 0, 0)
+    }
+
+    /** Opens turn-by-turn navigation in Google Maps, or any app/browser that handles the link. */
+    private fun openDirections(lat: Double, lng: Double) {
+        val destination = "$lat,$lng"
+        val navigation = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$destination"))
+            .setPackage("com.google.android.apps.maps")
+        val web = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving")
+        )
+        try {
+            startActivity(navigation)
+        } catch (e: ActivityNotFoundException) {
+            try {
+                startActivity(web)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(this, R.string.msg_no_maps_app, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun distanceKmBetween(from: LatLng, to: LatLng): Double {
+        val result = FloatArray(1)
+        Location.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude, result)
+        return result[0] / 1000.0
+    }
+
+    /** "850 m" below 1 km, otherwise "2.4 km". */
+    private fun formatDistance(km: Double): String =
+        if (km < 1.0) "${(km * 1000).toInt()} m" else "${formatNumber(km)} km"
+
+    /** Hides a field entirely when the API sent null, rather than printing "null". */
+    private fun bindOptionalText(view: TextView, value: String?) {
+        if (value.isNullOrBlank()) {
+            view.visibility = View.GONE
+        } else {
+            view.visibility = View.VISIBLE
+            view.text = value
+        }
+    }
+
+    private fun showMessage(message: String) {
+        binding.messageText.text = message
+        binding.messageCard.visibility = View.VISIBLE
+    }
+
+    private fun hideMessage() {
+        binding.messageCard.visibility = View.GONE
+    }
+
+    private fun formatNumber(value: Double): String =
+        String.format(Locale.getDefault(), "%.1f", value)
+
+    companion object {
+        private const val SEPARATOR = "  •  "
+    }
+}
+
+
+--- Part 4: NearbyStationsViewModel ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/ui/map/NearbyStationsViewModel.kt)
+
+package com.example.smartsolarmicrogrid.ui.map
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.smartsolarmicrogrid.data.model.StationDetailDto
+import com.example.smartsolarmicrogrid.data.model.StationMapSummaryDto
+import com.example.smartsolarmicrogrid.data.repository.ApiResult
+import com.example.smartsolarmicrogrid.data.repository.StationRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+/**
+ * Every state the map screen can be in. Modelling these explicitly means the
+ * Activity only renders what it is told, and no combination such as
+ * "loading and error at once" can arise.
+ */
+sealed class StationsUiState {
+    data object Idle : StationsUiState()
+    data object Loading : StationsUiState()
+    data class Success(val stations: List<StationMapSummaryDto>) : StationsUiState()
+    /** A successful call that returned nothing - not an error. */
+    data object Empty : StationsUiState()
+    data class Error(val message: String) : StationsUiState()
+}
+
+/** State of the details panel shown after a marker tap. */
+sealed class StationDetailUiState {
+    data object Hidden : StationDetailUiState()
+    data object Loading : StationDetailUiState()
+    data class Success(val station: StationDetailDto) : StationDetailUiState()
+    data class Error(val message: String) : StationDetailUiState()
+}
+
+/**
+ * Holds the state of the Nearby Stations screen.
+ *
+ * It survives configuration changes, so rotating the device does not re-issue
+ * the network call or lose the loaded markers. It knows nothing about Android
+ * views, which keeps it testable.
+ */
+class NearbyStationsViewModel(
+    private val repository: StationRepository = StationRepository()
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow<StationsUiState>(StationsUiState.Idle)
+    val uiState: StateFlow<StationsUiState> = _uiState.asStateFlow()
+
+    private val _detailState = MutableStateFlow<StationDetailUiState>(StationDetailUiState.Hidden)
+    val detailState: StateFlow<StationDetailUiState> = _detailState.asStateFlow()
+
+    /** True once stations have been loaded, so the map is not reloaded on rotation. */
+    var hasLoadedOnce: Boolean = false
+        private set
+
+    fun loadNearbyStations(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = StationRepository.DEFAULT_RADIUS_KM
+    ) {
+        _uiState.value = StationsUiState.Loading
+
+        viewModelScope.launch {
+            when (val result = repository.getNearbyStations(latitude, longitude, radiusKm)) {
+                is ApiResult.Success -> {
+                    hasLoadedOnce = true
+                    _uiState.value = if (result.data.isEmpty()) {
+                        StationsUiState.Empty
+                    } else {
+                        StationsUiState.Success(result.data)
+                    }
+                }
+
+                is ApiResult.Error -> {
+                    _uiState.value = StationsUiState.Error(result.message)
+                }
+            }
+        }
+    }
+
+    /** Called when a marker is tapped, with the station id carried by that marker. */
+    fun loadStationDetails(stationId: String) {
+        _detailState.value = StationDetailUiState.Loading
+
+        viewModelScope.launch {
+            _detailState.value = when (val result = repository.getStationDetails(stationId)) {
+                is ApiResult.Success -> StationDetailUiState.Success(result.data)
+                is ApiResult.Error -> StationDetailUiState.Error(result.message)
+            }
+        }
+    }
+
+    fun dismissDetails() {
+        _detailState.value = StationDetailUiState.Hidden
+    }
+}
+
+
+--- Part 5: ProsumerDashboardActivity ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/ui/dashboard/ProsumerDashboardActivity.kt)
+
+package com.example.smartsolarmicrogrid.ui.dashboard
+
+import android.content.Intent
+import android.os.Bundle
+import android.text.format.DateUtils
+import android.view.View
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
+import com.example.smartsolarmicrogrid.data.local.TokenManager
+import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
+import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
+import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
+import com.example.smartsolarmicrogrid.data.repository.StationRepository
+import com.example.smartsolarmicrogrid.ui.auth.LoginActivity
+import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
+import com.example.smartsolarmicrogrid.ui.booking.MyReservationsActivity
+import com.example.smartsolarmicrogrid.ui.common.ProsumerNavigator
+import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
+import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.Executors
+
+/**
+ * Dashboard activity for users with the Active Prosumer role.
+ * Integrates live microgrid node operations, nearby station map previews, and live reservation telemetry from the backend Web API.
+ */
+class ProsumerDashboardActivity : AppCompatActivity() {
+
+    private lateinit var tvAvatarInitials: TextView
+    private lateinit var tvGreeting: TextView
+    private lateinit var tvWelcomeUser: TextView
+    private lateinit var tvUserRoleStatus: TextView
+    private lateinit var tvSyncStatus: TextView
+    private lateinit var tvPendingCount: TextView
+    private lateinit var tvUpcomingApprovedCount: TextView
+    private lateinit var tvTotalCount: TextView
+    private lateinit var bottomNav: BottomNavigationView
+
+    // Next energy transfer card
+    private lateinit var layoutNextTransferContent: View
+    private lateinit var layoutNextTransferEmpty: View
+    private lateinit var tvNextStatus: TextView
+    private lateinit var tvNextStation: TextView
+    private lateinit var tvNextSchedule: TextView
+    private lateinit var tvNextEnergy: TextView
+    private lateinit var tvNextEmptyTitle: TextView
+    private lateinit var tvNextEmptySubtitle: TextView
+
+    // Live Preview Fields (Member 2 map logic)
+    private lateinit var cardPreviewStation: View
+    private lateinit var tvPreviewStationName: TextView
+    private lateinit var tvPreviewStationStatus: TextView
+    private lateinit var tvPreviewStationDetails: TextView
+
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var stationRepository: StationRepository
+
+    private lateinit var authSessionDao: AuthSessionDao
+    private lateinit var tokenManager: TokenManager
+    private lateinit var reservationApiClient: ReservationApiClient
+    private val executor = Executors.newSingleThreadExecutor()
+
+    /** The soonest upcoming Approved/Pending reservation, or null if there is none. */
+    private var nextReservation: ReservationHistoryDto? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_prosumer_dashboard)
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.prosumerDashboardRoot)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            insets
+        }
+
+        authSessionDao = AuthSessionDao(this)
+        tokenManager = TokenManager(this)
+        reservationApiClient = ReservationApiClient()
+
+        initViews()
+        setupListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        tvGreeting.text = greetingForNow()
+        loadSessionData()
+    }
+
+    private fun initViews() {
+        tvAvatarInitials = findViewById(R.id.tvAvatarInitials)
+        tvGreeting = findViewById(R.id.tvGreeting)
+        tvWelcomeUser = findViewById(R.id.tvWelcomeUser)
+        tvUserRoleStatus = findViewById(R.id.tvUserRoleStatus)
+        tvSyncStatus = findViewById(R.id.tvSyncStatus)
+        tvPendingCount = findViewById(R.id.tvPendingCount)
+        tvUpcomingApprovedCount = findViewById(R.id.tvUpcomingApprovedCount)
+        tvTotalCount = findViewById(R.id.tvTotalCount)
+        bottomNav = findViewById(R.id.bottomNavigation)
+
+        layoutNextTransferContent = findViewById(R.id.layoutNextTransferContent)
+        layoutNextTransferEmpty = findViewById(R.id.layoutNextTransferEmpty)
+        tvNextStatus = findViewById(R.id.tvNextStatus)
+        tvNextStation = findViewById(R.id.tvNextStation)
+        tvNextSchedule = findViewById(R.id.tvNextSchedule)
+        tvNextEnergy = findViewById(R.id.tvNextEnergy)
+        tvNextEmptyTitle = findViewById(R.id.tvNextEmptyTitle)
+        tvNextEmptySubtitle = findViewById(R.id.tvNextEmptySubtitle)
+
+        cardPreviewStation = findViewById(R.id.cardPreviewStation)
+        tvPreviewStationName = findViewById(R.id.tvPreviewStationName)
+        tvPreviewStationStatus = findViewById(R.id.tvPreviewStationStatus)
+        tvPreviewStationDetails = findViewById(R.id.tvPreviewStationDetails)
+    }
+
+    private fun loadSessionData() {
+        executor.execute {
+            val session = authSessionDao.readSession()
+            val token = tokenManager.getToken()
+            runOnUiThread {
+                if (session != null) {
+                    val displayName = session.fullName?.takeIf { it.isNotBlank() } ?: "Prosumer"
+                    tvWelcomeUser.text = displayName.substringBefore(' ')
+                    tvAvatarInitials.text = initialsOf(displayName)
+                    tvUserRoleStatus.text = "Solar ${session.role}"
+
+                    // Fetch live dashboard statistics from the C# Web API (Member 4)
+                    tvSyncStatus.text = "Syncing…"
+                    fetchLiveStats(session.nic, token)
+                    fetchNextTransfer(session.nic, token)
+                }
+            }
+        }
+    }
+
+    private fun fetchLiveStats(nic: String, token: String?) {
+        reservationApiClient.getDashboardStats(nic, token) { response ->
+            when (response) {
+                is ApiResponse.Success -> {
+                    tvPendingCount.text = response.data.pendingCount.toString()
+                    tvUpcomingApprovedCount.text = response.data.upcomingApprovedCount.toString()
+                    tvTotalCount.text = response.data.totalBookingsCount.toString()
+                    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                    setSyncStatus("● Updated $time", R.color.color_on_brand_accent)
+                }
+                else -> {
+                    // Retain the last known counts and flag that the data may be stale
+                    setSyncStatus("● Offline", R.color.color_on_brand_warning)
+                }
+            }
+        }
+    }
+
+    private fun setSyncStatus(text: String, colorRes: Int) {
+        tvSyncStatus.text = text
+        tvSyncStatus.setTextColor(ContextCompat.getColor(this, colorRes))
+    }
+
+    /** Loads booking history and shows the soonest upcoming Approved or Pending reservation. */
+    private fun fetchNextTransfer(nic: String, token: String?) {
+        reservationApiClient.getBookingHistory(nic = nic, authToken = token) { response ->
+            when (response) {
+                is ApiResponse.Success -> {
+                    nextReservation = ProsumerNavigator.findNextReservation(response.data)
+                    renderNextTransfer(loadFailed = false)
+                }
+                else -> {
+                    nextReservation = null
+                    renderNextTransfer(loadFailed = true)
+                }
+            }
+        }
+    }
+
+    private fun renderNextTransfer(loadFailed: Boolean) {
+        val next = nextReservation
+        if (next == null) {
+            layoutNextTransferContent.visibility = View.GONE
+            layoutNextTransferEmpty.visibility = View.VISIBLE
+            if (loadFailed) {
+                tvNextEmptyTitle.text = "Couldn't load reservations"
+                tvNextEmptySubtitle.text = "Check your connection and reopen the dashboard."
+            } else {
+                tvNextEmptyTitle.text = "No upcoming transfers"
+                tvNextEmptySubtitle.text = "Find a nearby station and reserve a slot."
+            }
+            return
+        }
+
+        layoutNextTransferEmpty.visibility = View.GONE
+        layoutNextTransferContent.visibility = View.VISIBLE
+
+        val approved = next.status.equals("Approved", true)
+        tvNextStatus.text = next.status.uppercase(Locale.getDefault())
+        tvNextStatus.setBackgroundResource(if (approved) R.drawable.bg_pill_active else R.drawable.bg_pill_review)
+        tvNextStatus.setTextColor(
+            ContextCompat.getColor(this, if (approved) R.color.color_on_primary_container else R.color.color_on_warning_container)
+        )
+
+        tvNextStation.text = next.stationName.ifBlank { next.stationId }
+        tvNextSchedule.text = formatSchedule(next.startTime, next.endTime)
+        tvNextEnergy.text = String.format(Locale.getDefault(), "%.1f kWh • %s", next.energyAmountKWh, next.actionType)
+    }
+
+    private fun openNextReservationQr() = ProsumerNavigator.openQrFor(this, nextReservation)
+
+    private fun setupListeners() {
+        // QR uses the reservation this screen already loaded, so it opens instantly
+        ProsumerNavigator.setupBottomNav(this, bottomNav, R.id.nav_home) { openNextReservationQr() }
+
+        // Quick Actions logic mapping (Member 2 map logic & navigation)
+        val openStations = View.OnClickListener {
+            startActivity(Intent(this, NearbyStationsActivity::class.java))
+        }
+        findViewById<View>(R.id.btnQuickNearby).setOnClickListener(openStations)
+        findViewById<View>(R.id.tvSeeMap).setOnClickListener(openStations)
+        findViewById<View>(R.id.cardMapPlaceholder).setOnClickListener(openStations)
+
+        // Member 3 - Book Energy quick action
+        val openBooking = View.OnClickListener {
+            startActivity(Intent(this, CreateBookingActivity::class.java))
+        }
+        findViewById<View>(R.id.btnQuickBook).setOnClickListener(openBooking)
+        findViewById<View>(R.id.btnBookFromEmpty).setOnClickListener(openBooking)
+
+        // Member 3 - My Reservations management screen (Modify, Cancel, QR & History)
+        findViewById<View>(R.id.btnQuickBookings).setOnClickListener {
+            startActivity(Intent(this, MyReservationsActivity::class.java))
+        }
+        findViewById<View>(R.id.btnQuickQr).setOnClickListener { openNextReservationQr() }
+        findViewById<View>(R.id.cardNextTransfer).setOnClickListener {
+            if (nextReservation != null) openNextReservationQr()
+        }
+
+        findViewById<View>(R.id.btnNotifications).setOnClickListener {
+            Toast.makeText(this, "No new notifications", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun greetingForNow(): String = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+        in 5..11 -> "Good morning,"
+        in 12..16 -> "Good afternoon,"
+        else -> "Good evening,"
+    }
+
+    private fun initialsOf(name: String): String =
+        name.split(' ').filter { it.isNotBlank() }.take(2)
+            .joinToString("") { it.first().uppercase() }
+            .ifEmpty { "P" }
+
+    /** e.g. "Today • 10:30 – 11:30", "Tomorrow • 09:00 – 10:00", "Mon, 12 Oct • 14:00 – 15:00". */
+    private fun formatSchedule(startIso: String, endIso: String): String {
+        val start = ProsumerNavigator.parseUtc(startIso) ?: return startIso
+        val end = ProsumerNavigator.parseUtc(endIso)
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+        val day = when {
+            DateUtils.isToday(start.time) -> "Today"
+            DateUtils.isToday(start.time - DateUtils.DAY_IN_MILLIS) -> "Tomorrow"
+            else -> SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(start)
+        }
+        val range = if (end != null) "${timeFormat.format(start)} – ${timeFormat.format(end)}" else timeFormat.format(start)
+        return "$day • $range"
+    }
+
+    private fun performLogout() {
+        executor.execute {
+            authSessionDao.deleteSession()
+            tokenManager.clearToken()
+            runOnUiThread {
+                val intent = Intent(this, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            }
+        }
+    }
+}
+
+
+--- Part 6: ProsumerNavigator ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/ui/common/ProsumerNavigator.kt)
+
+package com.example.smartsolarmicrogrid.ui.common
+
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
+import com.example.smartsolarmicrogrid.R
+import com.example.smartsolarmicrogrid.data.local.AuthSessionDao
+import com.example.smartsolarmicrogrid.data.local.TokenManager
+import com.example.smartsolarmicrogrid.data.remote.ReservationApiClient
+import com.example.smartsolarmicrogrid.data.remote.dto.ApiResponse
+import com.example.smartsolarmicrogrid.data.remote.dto.ReservationHistoryDto
+import com.example.smartsolarmicrogrid.ui.booking.BookingHistoryActivity
+import com.example.smartsolarmicrogrid.ui.booking.CreateBookingActivity
+import com.example.smartsolarmicrogrid.ui.booking.ReservationQrActivity
+import com.example.smartsolarmicrogrid.ui.dashboard.ProsumerDashboardActivity
+import com.example.smartsolarmicrogrid.ui.map.NearbyStationsActivity
+import com.example.smartsolarmicrogrid.ui.profile.ProfileActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.concurrent.Executors
+
+/**
+ * Shared navigation for the prosumer bottom bar and quick actions, so every
+ * screen opens Bookings and the QR pass the same way.
+ */
+object ProsumerNavigator {
+
+    private val executor = Executors.newSingleThreadExecutor()
+
+    /**
+     * Wires the shared prosumer bottom bar on any screen. [current] is the tab for
+     * this screen; it stays highlighted because tapping another tab opens that
+     * screen without changing this one's selection.
+     */
+    fun setupBottomNav(
+        activity: Activity,
+        bottomNav: BottomNavigationView,
+        current: Int,
+        onQrSelected: () -> Unit = { openUpcomingQr(activity) }
+    ) {
+        bottomNav.menu.findItem(current)?.isChecked = true
+        bottomNav.setOnItemSelectedListener { item ->
+            if (item.itemId == current) return@setOnItemSelectedListener true
+            when (item.itemId) {
+                R.id.nav_home -> activity.startActivity(
+                    Intent(activity, ProsumerDashboardActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+                R.id.nav_map -> openTab(activity, NearbyStationsActivity::class.java)
+                R.id.nav_bookings -> openBookings(activity)
+                R.id.nav_qr -> onQrSelected()
+                R.id.nav_profile -> openTab(activity, ProfileActivity::class.java)
+            }
+            false
+        }
+    }
+
+    fun openBookings(activity: Activity) = openTab(activity, CreateBookingActivity::class.java)
+
+    /** Brings an already-open tab screen to the front instead of stacking a new copy. */
+    private fun openTab(activity: Activity, target: Class<out Activity>) {
+        activity.startActivity(Intent(activity, target).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+    }
+
+    /**
+     * Opens the QR pass for [next] when it is approved; otherwise explains why
+     * there is no QR yet and falls back to the booking history.
+     */
+    fun openQrFor(activity: Activity, next: ReservationHistoryDto?) {
+        if (next != null && next.status.equals("Approved", true)) {
+            activity.startActivity(Intent(activity, ReservationQrActivity::class.java).apply {
+                putExtra(ReservationQrActivity.EXTRA_RESERVATION_ID, next.id)
+            })
+            return
+        }
+        val message = if (next != null) {
+            "Your QR code will be available once the reservation is approved."
+        } else {
+            "No upcoming reservation. Book a slot to get a QR code."
+        }
+        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+        openBookings(activity)
+    }
+
+    /** Looks up the user's next reservation from the API, then behaves like [openQrFor]. */
+    fun openUpcomingQr(activity: Activity) {
+        val sessionDao = AuthSessionDao(activity)
+        val tokenManager = TokenManager(activity)
+        executor.execute {
+            val nic = sessionDao.readSession()?.nic
+            val token = tokenManager.getToken()
+            activity.runOnUiThread {
+                if (nic == null) {
+                    openBookings(activity)
+                    return@runOnUiThread
+                }
+                ReservationApiClient().getBookingHistory(nic = nic, authToken = token) { response ->
+                    if (activity.isFinishing || activity.isDestroyed) return@getBookingHistory
+                    when (response) {
+                        is ApiResponse.Success -> openQrFor(activity, findNextReservation(response.data))
+                        else -> {
+                            Toast.makeText(activity, "Couldn't load your reservations.", Toast.LENGTH_SHORT).show()
+                            openBookings(activity)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** The soonest upcoming Approved or Pending reservation, or null if there is none. */
+    fun findNextReservation(items: List<ReservationHistoryDto>): ReservationHistoryDto? {
+        val now = System.currentTimeMillis()
+        return items
+            .filter { it.status.equals("Approved", true) || it.status.equals("Pending", true) }
+            .mapNotNull { item -> parseUtc(item.startTime)?.let { item to it } }
+            .filter { (_, start) -> start.time >= now }
+            .minByOrNull { (_, start) -> start.time }
+            ?.first
+    }
+
+    /** Parses the backend's UTC ISO-8601 timestamps (with or without fractional seconds / 'Z'). */
+    fun parseUtc(iso: String): Date? = try {
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.parse(iso.substringBefore('.').removeSuffix("Z"))
+    } catch (e: Exception) {
+        null
+    }
+}
+
+
+--- Part 7: SmartSolarApp ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/SmartSolarApp.kt)
+
+package com.example.smartsolarmicrogrid
+
+import android.app.Application
+import com.example.smartsolarmicrogrid.util.ThemeManager
+
+class SmartSolarApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        ThemeManager.applySaved(this)
+    }
+}
+
+
+--- Part 8: StationApiService ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/data/remote/StationApiService.kt)
+
+package com.example.smartsolarmicrogrid.data.remote
+
+import com.example.smartsolarmicrogrid.data.model.StationDetailDto
+import com.example.smartsolarmicrogrid.data.model.StationMapSummaryDto
+import retrofit2.Response
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+/**
+ * Declarative description of the station endpoints of the C# Web API.
+ *
+ * Retrofit generates the implementation at runtime; this interface is only a
+ * statement of the contract. Each function is a `suspend` function so the call
+ * can be made from a coroutine without ever blocking the main thread.
+ *
+ * Response<T> is used rather than a bare T so that a non-2xx status (401, 404,
+ * 400) can be inspected and turned into a readable message, instead of being
+ * thrown as a generic exception.
+ */
+interface StationApiService {
+
+    /**
+     * Active stations within [radiusKm] of the given point, nearest first.
+     * An empty array is a valid answer meaning "nothing nearby".
+     */
+    @GET("api/stations/nearby")
+    suspend fun getNearbyStations(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("radiusKm") radiusKm: Double = 10.0,
+        @Query("limit") limit: Int = 50
+    ): Response<List<StationMapSummaryDto>>
+
+    /** Public detail for one station, shown after its marker is tapped. */
+    @GET("api/stations/{id}/details")
+    suspend fun getStationDetails(
+        @Path("id") stationId: String
+    ): Response<StationDetailDto>
+}
+
+
+--- Part 9: StationRepository ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/data/repository/StationRepository.kt)
+
+package com.example.smartsolarmicrogrid.data.repository
+
+import com.example.smartsolarmicrogrid.data.model.StationDetailDto
+import com.example.smartsolarmicrogrid.data.model.StationMapSummaryDto
+import com.example.smartsolarmicrogrid.data.remote.ApiClient
+import com.example.smartsolarmicrogrid.data.remote.StationApiService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import retrofit2.Response
+import java.io.IOException
+
+/**
+ * Single source of station data for the app.
+ *
+ * Responsibilities:
+ *  - call the REST API off the main thread,
+ *  - translate HTTP status codes and exceptions into readable messages,
+ *  - drop stations whose coordinates are missing or out of range, so that
+ *    invalid data can never reach the map layer.
+ *
+ * The UI layer talks only to this class, so swapping the data source later
+ * (adding a cache, changing endpoints) touches nothing above it.
+ */
+class StationRepository(
+    // Resolved lazily so that ApiClient.init() has run before the Retrofit
+    // instance (and its auth interceptor) is built.
+    apiProvider: () -> StationApiService = { ApiClient.stationApi }
+) {
+
+    private val api: StationApiService by lazy(apiProvider)
+
+
+    suspend fun getNearbyStations(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double = DEFAULT_RADIUS_KM
+    ): ApiResult<List<StationMapSummaryDto>> = safeCall {
+        val response = api.getNearbyStations(
+            latitude = latitude,
+            longitude = longitude,
+            radiusKm = radiusKm
+        )
+        // An empty body on a 200 is treated as "no stations", not an error.
+        response.mapSuccess { it.orEmpty().filter(::hasUsableCoordinates) }
+    }
+
+    suspend fun getStationDetails(stationId: String): ApiResult<StationDetailDto> = safeCall {
+        api.getStationDetails(stationId).mapSuccess { body ->
+            body ?: return@mapSuccess null
+        }
+    }
+
+    /**
+     * A station is plottable only when both coordinates are present and inside
+     * the valid latitude/longitude ranges. (0,0) is also rejected: it is in the
+     * ocean off Africa and in practice means "never set".
+     */
+    private fun hasUsableCoordinates(station: StationMapSummaryDto): Boolean {
+        val lat = station.latitude ?: return false
+        val lng = station.longitude ?: return false
+        if (lat.isNaN() || lng.isNaN()) return false
+        if (lat !in -90.0..90.0 || lng !in -180.0..180.0) return false
+        if (lat == 0.0 && lng == 0.0) return false
+        return true
+    }
+
+    /**
+     * Runs a call on the IO dispatcher and converts anything that goes wrong
+     * into an [ApiResult.Error] with a message suitable for the screen.
+     */
+    private suspend fun <T> safeCall(block: suspend () -> ApiResult<T>): ApiResult<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: IOException) {
+                // No connectivity, DNS failure, timeout, server not running.
+                ApiResult.Error(
+                    "Cannot reach the server. Check that the API is running " +
+                        "and that you are connected to the network."
+                )
+            } catch (e: Exception) {
+                // Malformed JSON, unexpected contract change, anything else.
+                ApiResult.Error("Something went wrong while loading stations.")
+            }
+        }
+
+    /** Maps a Retrofit [Response] onto [ApiResult], naming each failure clearly. */
+    private fun <B, T> Response<B>.mapSuccess(transform: (B?) -> T?): ApiResult<T> {
+        if (isSuccessful) {
+            val value = transform(body())
+                ?: return ApiResult.Error("The server returned an empty response.")
+            return ApiResult.Success(value)
+        }
+        val message = when (code()) {
+            400 -> "The request was rejected. Please check the search location."
+            401, 403 -> "You are not authorised to view stations. Please sign in again."
+            404 -> "Station not found."
+            in 500..599 -> "The server is having a problem. Please try again later."
+            else -> "Unexpected server response (${code()})."
+        }
+        return ApiResult.Error(message)
+    }
+
+    companion object {
+        const val DEFAULT_RADIUS_KM = 10.0
+    }
+}
+
+
+--- Part 10: ThemeManager ---
+(source: mobile-client/app/src/main/java/com/example/smartsolarmicrogrid/util/ThemeManager.kt)
+
+package com.example.smartsolarmicrogrid.util
+
+import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+
+/**
+ * Stores and applies the user's appearance choice (System / Light / Dark).
+ * The colors themselves live in res/values/colors.xml and res/values-night/colors.xml.
+ */
+object ThemeManager {
+
+    enum class Mode(val label: String, val nightMode: Int) {
+        SYSTEM("System default", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM),
+        LIGHT("Light", AppCompatDelegate.MODE_NIGHT_NO),
+        DARK("Dark", AppCompatDelegate.MODE_NIGHT_YES)
+    }
+
+    private const val PREFS_NAME = "smart_solar_appearance"
+    private const val KEY_MODE = "theme_mode"
+
+    fun getMode(context: Context): Mode {
+        val saved = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_MODE, Mode.SYSTEM.name)
+        return Mode.entries.firstOrNull { it.name == saved } ?: Mode.SYSTEM
+    }
+
+    /** Saves [mode] and recreates open activities with the new theme. */
+    fun setMode(context: Context, mode: Mode) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_MODE, mode.name).apply()
+        AppCompatDelegate.setDefaultNightMode(mode.nightMode)
+    }
+
+    /** Call once at app start, before any activity is shown. */
+    fun applySaved(context: Context) {
+        AppCompatDelegate.setDefaultNightMode(getMode(context).nightMode)
+    }
+}
+
+
