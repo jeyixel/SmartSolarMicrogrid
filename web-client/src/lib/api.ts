@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5127/api';
+// use 5127 if not mentioned in .env, 5127 is discarded when running on IIS server
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5127';
+const API_BASE_URL = `${RAW_BASE.replace(/\/+$/, '').replace(/\/api$/, '')}/api`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Domain Interfaces
